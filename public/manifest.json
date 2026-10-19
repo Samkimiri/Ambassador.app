@@ -1,0 +1,19 @@
+{
+  "name": "SCDS Ambassador Hub — Sam Creative Design School",
+  "short_name": "SCDS Hub",
+  "description": "Official Ambassador, Referral & Growth Platform for Sam Creative Design School (SCDS). Exceptional, Strategic & Realistic.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#090d16",
+  "theme_color": "#ea580c",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
+
