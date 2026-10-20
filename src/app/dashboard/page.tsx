@@ -77,20 +77,20 @@ export default function AmbassadorDashboardPage() {
 
   return (
     <div className="space-y-8">
-      {/* Header & Referral Share Banner */}
-      <div className="rounded-2xl bg-slate-950 text-white p-6 sm:p-8 shadow-sm border border-slate-800 space-y-6">
+      {/* Header & Referral Share Banner — SCDS Electric Blue (#0048E8) & Golden Yellow (#F8B820) */}
+      <div className="rounded-2xl bg-brand-600 text-white p-6 sm:p-8 shadow-sm border border-brand-700 space-y-6">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/20 border border-emerald-500/30 px-2.5 py-0.5 text-xs font-semibold text-emerald-300">
-                <CheckCircle2 className="h-3.5 w-3.5" /> Active SCDS Ambassador
+              <span className="inline-flex items-center gap-1 rounded-full bg-gold-400 px-2.5 py-0.5 text-xs font-bold text-navy-900">
+                <CheckCircle2 className="h-3.5 w-3.5 text-navy-900" /> Active SCDS Ambassador
               </span>
               <LevelBadge level={amb.level} />
             </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight pt-1">
+            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white pt-1">
               Welcome back, {amb.fullName.split(" ")[0]}!
             </h1>
-            <p className="text-xs sm:text-sm text-slate-400">
+            <p className="text-xs sm:text-sm text-white/90">
               Share your official SCDS referral link to attribute course enquiries
               and earn verified rewards.
             </p>
@@ -101,7 +101,7 @@ export default function AmbassadorDashboardPage() {
               href={`https://wa.me/?text=${encodeURIComponent(whatsappText)}`}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-semibold text-white hover:bg-emerald-500 transition"
+              className="inline-flex items-center gap-2 rounded-xl bg-gold-400 px-4 py-2.5 text-xs font-bold text-navy-900 hover:bg-gold-300 transition"
             >
               <Share2 className="h-4 w-4" /> Share on WhatsApp
             </a>
@@ -111,31 +111,31 @@ export default function AmbassadorDashboardPage() {
               )}`}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-900 px-4 py-2.5 text-xs font-semibold text-slate-200 hover:bg-slate-800 transition"
+              className="inline-flex items-center gap-2 rounded-xl border border-white/30 bg-navy-900 px-4 py-2.5 text-xs font-semibold text-white hover:bg-navy-800 transition"
             >
               Share on X
             </a>
           </div>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-12 pt-2 border-t border-slate-800/80">
-          <div className="md:col-span-4 rounded-xl bg-slate-900 border border-slate-800 p-3.5 flex items-center justify-between">
+        <div className="grid gap-4 md:grid-cols-12 pt-2 border-t border-white/20">
+          <div className="md:col-span-4 rounded-xl bg-navy-900 border border-navy-800 p-3.5 flex items-center justify-between">
             <div>
-              <div className="text-[11px] text-slate-400">
+              <div className="text-[11px] text-slate-300">
                 Unique Referral Code
               </div>
-              <div className="text-base font-mono font-bold text-brand-400 mt-0.5">
+              <div className="text-base font-mono font-bold text-gold-400 mt-0.5">
                 {amb.referralCode}
               </div>
             </div>
             <button
               type="button"
               onClick={() => handleCopy(amb.referralCode, "code")}
-              className="inline-flex items-center gap-1 rounded-lg bg-slate-800 px-3 py-1.5 text-xs font-semibold text-slate-200 hover:bg-slate-700"
+              className="inline-flex items-center gap-1 rounded-lg bg-white/10 px-3 py-1.5 text-xs font-semibold text-white hover:bg-white/20"
             >
               {copiedCode ? (
                 <>
-                  <Check className="h-3.5 w-3.5 text-emerald-400" /> Copied
+                  <Check className="h-3.5 w-3.5 text-gold-400" /> Copied
                 </>
               ) : (
                 <>
@@ -145,19 +145,19 @@ export default function AmbassadorDashboardPage() {
             </button>
           </div>
 
-          <div className="md:col-span-8 rounded-xl bg-slate-900 border border-slate-800 p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div className="md:col-span-8 rounded-xl bg-navy-900 border border-navy-800 p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div className="truncate">
-              <div className="text-[11px] text-slate-400">
+              <div className="text-[11px] text-slate-300">
                 Shareable Referral Attribution Link
               </div>
-              <div className="text-xs sm:text-sm font-mono text-slate-200 truncate mt-0.5">
+              <div className="text-xs sm:text-sm font-mono text-white truncate mt-0.5">
                 {referralUrl}
               </div>
             </div>
             <button
               type="button"
               onClick={() => handleCopy(referralUrl, "link")}
-              className="shrink-0 inline-flex items-center justify-center gap-1.5 rounded-lg bg-brand-600 px-4 py-2 text-xs font-semibold text-white hover:bg-brand-500"
+              className="shrink-0 inline-flex items-center justify-center gap-1.5 rounded-lg bg-gold-400 px-4 py-2 text-xs font-bold text-navy-900 hover:bg-gold-300 transition"
             >
               {copiedLink ? (
                 <>
@@ -253,9 +253,9 @@ export default function AmbassadorDashboardPage() {
                 </span>
                 <span>{levelProgress.progressPct}%</span>
               </div>
-              <div className="h-2.5 w-full rounded-full bg-slate-100 overflow-hidden">
+              <div className="h-2.5 w-full rounded-full bg-brand-100 overflow-hidden">
                 <div
-                  className="h-full bg-brand-600 rounded-full transition-all"
+                  className="h-full bg-gold-400 rounded-full transition-all"
                   style={{ width: `${levelProgress.progressPct}%` }}
                 />
               </div>

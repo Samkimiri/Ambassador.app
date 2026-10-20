@@ -2,9 +2,41 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer base {
-  body {
-    @apply bg-slate-50 text-slate-900 antialiased selection:bg-brand-500 selection:text-white;
-  }
+:root {
+  --color-primary: #0048E8;
+  --color-primary-hover: #003AC2;
+  --color-secondary: #F8B820;
+  --color-secondary-hover: #E0A210;
+  --color-background: #FFFFFF;
+  --color-surface: #F5F8FF;
+  --color-navy: #0B1F50;
+  --color-text: #252525;
+  --color-border: #E5E7EB;
 }
 
+@layer base {
+  html {
+    color: var(--color-text);
+    background-color: var(--color-surface);
+  }
+
+  body {
+    color: var(--color-text);
+    background-color: var(--color-surface);
+    @apply antialiased selection:bg-[#0048E8] selection:text-white;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    color: var(--color-navy);
+  }
+
+  /* Accessible keyboard focus states */
+  a:focus-visible,
+  button:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+  }
+}

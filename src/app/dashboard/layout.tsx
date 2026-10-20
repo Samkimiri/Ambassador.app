@@ -164,28 +164,28 @@ export default function DashboardLayout({
         <div className="p-4 sm:p-5 space-y-5">
           <div className="flex items-center justify-between">
             <Link href="/" className="flex items-center gap-2.5">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-950 text-brand-500 font-bold text-sm">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-600 text-gold-400 font-extrabold text-sm shadow-sm">
                 SC
               </div>
               <div>
-                <div className="text-sm font-bold text-slate-900">
+                <div className="text-sm font-bold text-navy-900">
                   SCDS Ambassador
                 </div>
                 <div className="text-[11px] text-slate-500">
-                  Code: <span className="font-mono font-semibold text-brand-700">{activeAmb.referralCode}</span>
+                  Code: <span className="font-mono font-bold text-brand-600">{activeAmb.referralCode}</span>
                 </div>
               </div>
             </Link>
           </div>
 
-          <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 space-y-1.5">
+          <div className="rounded-xl border border-brand-100 bg-surface p-3 space-y-1.5">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-slate-900 truncate">
+              <span className="text-xs font-bold text-navy-900 truncate">
                 {activeAmb.fullName}
               </span>
               <LevelBadge level={activeAmb.level} />
             </div>
-            <div className="text-[11px] text-slate-500 truncate">
+            <div className="text-[11px] text-slate-600 truncate">
               {activeAmb.institution}
             </div>
           </div>
@@ -204,21 +204,21 @@ export default function DashboardLayout({
                   className={cn(
                     "flex items-center justify-between gap-2.5 rounded-xl px-3 py-2.5 text-xs font-semibold whitespace-nowrap transition",
                     isActive
-                      ? "bg-slate-950 text-white"
-                      : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                      ? "bg-brand-600 text-white shadow-sm"
+                      : "text-charcoal hover:bg-surface hover:text-brand-600"
                   )}
                 >
                   <span className="flex items-center gap-2.5">
                     <Icon
                       className={cn(
                         "h-4 w-4",
-                        isActive ? "text-brand-400" : "text-slate-400"
+                        isActive ? "text-gold-400" : "text-slate-400"
                       )}
                     />
                     {item.label}
                   </span>
                   {item.href === "/dashboard/notifications" && unreadCount > 0 && (
-                    <span className="rounded-full bg-brand-600 px-1.5 py-0.2 text-[10px] text-white">
+                    <span className="rounded-full bg-gold-400 px-1.5 py-0.2 text-[10px] font-bold text-navy-900">
                       {unreadCount}
                     </span>
                   )}

@@ -94,7 +94,7 @@ export default function AdminLayout({
       <aside className="w-full lg:w-64 shrink-0 border-b lg:border-b-0 lg:border-r border-slate-200 bg-slate-950 text-slate-300 flex flex-col justify-between">
         <div className="p-4 space-y-4">
           <Link href="/admin" className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-600 text-white font-bold text-sm">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-600 text-gold-400 font-extrabold text-sm">
               SC
             </div>
             <div>
@@ -121,21 +121,21 @@ export default function AdminLayout({
                   className={cn(
                     "flex items-center justify-between gap-2 rounded-xl px-3 py-2 text-xs font-semibold whitespace-nowrap transition",
                     isActive
-                      ? "bg-brand-600 text-white"
-                      : "text-slate-400 hover:bg-slate-900 hover:text-white"
+                      ? "bg-brand-600 text-white shadow-sm"
+                      : "text-slate-300 hover:bg-white/10 hover:text-white"
                   )}
                 >
                   <span className="flex items-center gap-2">
-                    <Icon className="h-4 w-4" />
+                    <Icon className={cn("h-4 w-4", isActive ? "text-gold-400" : "text-slate-400")} />
                     {item.label}
                   </span>
                   {item.href === "/admin/applications" && pendingApps > 0 && (
-                    <span className="rounded-full bg-amber-500 px-1.5 py-0.2 text-[10px] font-bold text-slate-950">
+                    <span className="rounded-full bg-gold-400 px-1.5 py-0.2 text-[10px] font-bold text-navy-900">
                       {pendingApps}
                     </span>
                   )}
                   {item.href === "/admin/payouts" && pendingPayouts > 0 && (
-                    <span className="rounded-full bg-emerald-400 px-1.5 py-0.2 text-[10px] font-bold text-slate-950">
+                    <span className="rounded-full bg-gold-400 px-1.5 py-0.2 text-[10px] font-bold text-navy-900">
                       {pendingPayouts}
                     </span>
                   )}

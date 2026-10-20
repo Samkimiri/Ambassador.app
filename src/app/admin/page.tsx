@@ -179,13 +179,13 @@ export default function AdminOverviewPage() {
                 <Bar
                   dataKey="leads"
                   name="Qualified Leads"
-                  fill="#0f172a"
+                  fill="#0048E8"
                   radius={[6, 6, 0, 0]}
                 />
                 <Bar
                   dataKey="verified"
                   name="Verified Enrolments"
-                  fill="#ea580c"
+                  fill="#F8B820"
                   radius={[6, 6, 0, 0]}
                 />
               </BarChart>
