@@ -26,6 +26,7 @@ import {
   verifyEnrolmentAndIssueRewardsOp,
 } from "@/lib/store-engine";
 import { isSupabaseConfigured } from "@/lib/supabase";
+import { enqueueOfflineAction } from "@/components/pwa/pwa-manager";
 
 const STORAGE_KEY = "scds_ambassador_hub_state_v1";
 const SESSION_KEY = "scds_ambassador_hub_user_v1";
@@ -273,6 +274,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       referralCode: input.referralCode || capturedReferralCode || "",
     });
     setDb(nextState);
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      enqueueOfflineAction({
+        type: "LEARNER_ENQUIRY",
+        label: `Learner Enquiry: ${referral.learnerName} (${referral.courseTitle})`,
+      });
+    }
     return referral;
   };
 
