@@ -266,3 +266,4 @@ export async function sendEmail(message: EmailMessage): Promise<EmailSendResult>
     isMock: true,
   };
 }
+
