@@ -25,6 +25,24 @@ export function EnvironmentBanner() {
     capturedReferralCode,
   } = useApp();
 
+  // If running in production with live Supabase or configured to hide demo banner in production
+  const isProduction = process.env.NODE_ENV === "production" && isSupabaseLive;
+  if (isProduction && !capturedReferralCode) {
+    return null;
+  }
+
+  // If in production with Supabase live and a referral code is captured, only show referral attribution badge
+  if (isProduction && capturedReferralCode) {
+    return (
+      <div className="border-b border-navy-800 bg-navy-950 text-white text-xs py-1.5 px-4 text-center">
+        <span className="inline-flex items-center gap-1 rounded-full bg-gold-400 text-navy-900 px-3 py-0.5 font-bold">
+          <Sparkles className="h-3 w-3" />
+          Referral Attribution Active: <strong>{capturedReferralCode}</strong>
+        </span>
+      </div>
+    );
+  }
+
   return (
     <div className="border-b border-navy-800 bg-navy-900 text-white text-xs">
       <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-2 px-4 py-2">
