@@ -117,9 +117,33 @@ const AppContext = createContext<AppContextValue | null>(null);
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [db, setDb] = useState<AppDatabaseState>(INITIAL_DATABASE_STATE);
-  const [currentUserId, setCurrentUserId] = useState<string | null>("user-amb-1");
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [capturedReferralCode, setCapturedReferralCode] = useState<string | null>(null);
   const [hydrated, setHydrated] = useState(false);
+
+  // Sync state across server and clients so applications submitted from public /auth/register or /join
+  // are immediately visible to the admin on their device/browser
+  const syncWithServer = async () => {
+    try {
+      const res = await fetch("/api/sync", { cache: "no-store" });
+      if (res.ok) {
+        const serverDb = (await res.json()) as AppDatabaseState;
+        if (serverDb && Array.isArray(serverDb.applications)) {
+          setDb((prev) => {
+            // Merge logic: ensure applications, referrals, and profiles from server are up to date
+            return serverDb;
+          });
+          try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(serverDb));
+          } catch {
+            // Ignore
+          }
+        }
+      }
+    } catch {
+      // Fallback to local storage if offline
+    }
+  };
 
   useEffect(() => {
     try {
@@ -145,6 +169,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setHydrated(true);
     }
+
+    // Immediately pull latest server database on mount
+    syncWithServer();
+
+    // Poll periodically every 5 seconds to ensure real-time admin sync across devices/windows
+    const interval = setInterval(syncWithServer, 5000);
+    return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {
@@ -155,6 +186,23 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       // Ignore quota errors
     }
   }, [db, hydrated]);
+
+  // Push mutations to server
+  const broadcastDbChange = (next: AppDatabaseState) => {
+    setDb(next);
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+    } catch {
+      // Ignore
+    }
+    fetch("/api/sync", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(next),
+    }).catch(() => {
+      // Offline fallback
+    });
+  };
 
   useEffect(() => {
     if (!hydrated) return;
@@ -265,7 +313,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       db,
       input
     );
-    setDb(nextState);
+    broadcastDbChange(nextState);
     setCurrentUserId(profile.id);
     return application;
   };
@@ -282,7 +330,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       decision,
       reviewNotes,
     });
-    setDb(nextState);
+    broadcastDbChange(nextState);
   };
 
   const submitLearnerEnquiry = (
@@ -292,7 +340,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       ...input,
       referralCode: input.referralCode || capturedReferralCode || "",
     });
-    setDb(nextState);
+    broadcastDbChange(nextState);
     if (typeof navigator !== "undefined" && !navigator.onLine) {
       enqueueOfflineAction({
         type: "LEARNER_ENQUIRY",
@@ -316,7 +364,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       note,
       newAmbassadorId,
     });
-    setDb(nextState);
+    broadcastDbChange(nextState);
   };
 
   const verifyEnrolment = (params: {
@@ -331,7 +379,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       actor: currentUser,
       ...params,
     });
-    setDb(nextState);
+    broadcastDbChange(nextState);
   };
 
   const requestPayout = (params: {
@@ -344,7 +392,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       ambassadorId: currentAmbassador.id,
       ...params,
     });
-    setDb(nextState);
+    broadcastDbChange(nextState);
   };
 
   const processPayout = (params: {
@@ -358,7 +406,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       actor: currentUser,
       ...params,
     });
-    setDb(nextState);
+    broadcastDbChange(nextState);
   };
 
   const saveCourse = (
