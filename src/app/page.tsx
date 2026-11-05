@@ -11,10 +11,12 @@ import {
   CheckCircle2,
   Coins,
   ExternalLink,
+  GraduationCap,
   Layers,
   Share2,
   ShieldCheck,
   Sparkles,
+  Terminal,
   Trophy,
   Users,
 } from "lucide-react";
@@ -209,6 +211,75 @@ export default function HomePage() {
                       Try Referral Link →
                     </Link>
                   </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Partner Campus Network & Industry Toolstack Ribbon */}
+        <section className="border-b border-slate-200 bg-white py-10">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6">
+            <div className="grid gap-8 lg:grid-cols-2 lg:divide-x lg:divide-slate-200">
+              {/* Universities & Student Hubs */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-500">
+                  <GraduationCap className="h-4 w-4 text-brand-600" />
+                  Active Student Ambassador Campus Network
+                </div>
+                <div className="flex flex-wrap items-center gap-2.5">
+                  {[
+                    { name: "University of Nairobi", code: "UoN", type: "Main Campus & Chiromo" },
+                    { name: "Jomo Kenyatta Univ. of Agriculture & Tech", code: "JKUAT", type: "Juja Campus" },
+                    { name: "Kenyatta University", code: "KU", type: "Main & Parklands" },
+                    { name: "Technical University of Kenya", code: "TUK", type: "Engineering Hub" },
+                    { name: "Strathmore University", code: "Strathmore", type: "Tech & Media Hub" },
+                    { name: "Mount Kenya University", code: "MKU", type: "Creative Depts" },
+                  ].map((uni) => (
+                    <div
+                      key={uni.code}
+                      className="group flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50/80 px-3.5 py-2 hover:border-brand-400 hover:bg-brand-50/50 transition shadow-xs"
+                    >
+                      <span className="flex h-6 w-6 items-center justify-center rounded-md bg-navy-900 text-[10px] font-black text-gold-400">
+                        {uni.code.slice(0, 2)}
+                      </span>
+                      <div>
+                        <div className="text-xs font-bold text-slate-900 group-hover:text-brand-700">
+                          {uni.code}
+                        </div>
+                        <div className="text-[10px] text-slate-500">
+                          {uni.type}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Taught Industry Tools & Payment Infrastructure */}
+              <div className="space-y-4 lg:pl-8">
+                <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-500">
+                  <Terminal className="h-4 w-4 text-gold-600" />
+                  Taught Toolstack &amp; Payment Infrastructure
+                </div>
+                <div className="flex flex-wrap items-center gap-2.5">
+                  {[
+                    { name: "SolidWorks", tag: "3D CAD Modeling", color: "bg-red-50 text-red-700 border-red-200" },
+                    { name: "Figma", tag: "UI/UX & Prototyping", color: "bg-purple-50 text-purple-700 border-purple-200" },
+                    { name: "Adobe Photoshop", tag: "Design & Retouching", color: "bg-blue-50 text-blue-700 border-blue-200" },
+                    { name: "Adobe Illustrator", tag: "Vector Branding", color: "bg-amber-50 text-amber-700 border-amber-200" },
+                    { name: "React & Next.js", tag: "Web & AI Products", color: "bg-cyan-50 text-cyan-700 border-cyan-200" },
+                    { name: "CapCut Pro", tag: "Viral Video Editing", color: "bg-slate-100 text-slate-800 border-slate-200" },
+                    { name: "M-Pesa Daraja", tag: "Instant Commission Payouts", color: "bg-emerald-50 text-emerald-800 border-emerald-300 font-bold" },
+                  ].map((tool) => (
+                    <div
+                      key={tool.name}
+                      className={`inline-flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs shadow-xs ${tool.color}`}
+                    >
+                      <span className="font-bold">{tool.name}</span>
+                      <span className="text-[10px] opacity-75 font-medium">&bull; {tool.tag}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
