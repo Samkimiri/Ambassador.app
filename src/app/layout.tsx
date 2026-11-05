@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { AppProvider } from "@/context/app-context";
-import { EnvironmentBanner } from "@/components/layout/site-header";
 import { PwaManager } from "@/components/pwa/pwa-manager";
 
 export const metadata: Metadata = {
@@ -70,7 +69,6 @@ export default function RootLayout({
       <body className="min-h-screen flex flex-col bg-surface text-charcoal">
         <AppProvider>
           <PwaManager />
-          <EnvironmentBanner />
           <div className="flex-1 flex flex-col">{children}</div>
         </AppProvider>
       </body>
