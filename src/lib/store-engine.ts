@@ -37,6 +37,7 @@ export function submitAmbassadorApplicationOp(
     fullName: string;
     email: string;
     phone: string;
+    password?: string;
     county: string;
     institution: string;
     occupation: string;
@@ -64,6 +65,7 @@ export function submitAmbassadorApplicationOp(
   const profile: Profile = {
     id: userId,
     email: normalizedEmail,
+    password: input.password,
     fullName: input.fullName.trim(),
     phone: input.phone.trim(),
     role: "learner", // Remains learner/pending until approved by Super Admin

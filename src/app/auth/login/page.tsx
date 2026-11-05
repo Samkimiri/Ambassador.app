@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Lock, ShieldCheck, UserCheck } from "lucide-react";
+import { Lock } from "lucide-react";
 import { PublicFooter, PublicNavbar } from "@/components/layout/site-header";
 import { useApp } from "@/context/app-context";
 import { loginSchema } from "@/lib/validations";
@@ -12,8 +12,8 @@ export default function LoginPage() {
   const router = useRouter();
   const { signInWithEmail } = useApp();
 
-  const [email, setEmail] = useState("amina.wanjiku@students.jkuat.ac.ke");
-  const [password, setPassword] = useState("SCDSAmbassador2026!");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
 
   const handleLogin = (e: React.FormEvent) => {
@@ -26,7 +26,7 @@ export default function LoginPage() {
       return;
     }
 
-    const res = signInWithEmail(parsed.data.email);
+    const res = signInWithEmail(parsed.data.email, parsed.data.password);
     if (!res.ok || !res.user) {
       setError(res.error || "Sign-in failed.");
       return;
@@ -37,12 +37,6 @@ export default function LoginPage() {
     } else {
       router.push("/dashboard");
     }
-  };
-
-  const quickFill = (targetEmail: string) => {
-    setEmail(targetEmail);
-    setPassword("SCDSAmbassador2026!");
-    setError(null);
   };
 
   return (
@@ -110,46 +104,6 @@ export default function LoginPage() {
               Sign In Securely
             </button>
           </form>
-
-          <div className="rounded-xl border border-slate-200 bg-slate-50 p-3.5 space-y-2">
-            <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-              Quick Demo Accounts (Click to Autofill)
-            </div>
-            <div className="grid gap-1.5 text-xs">
-              <button
-                type="button"
-                onClick={() => quickFill("amina.wanjiku@students.jkuat.ac.ke")}
-                className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-left hover:border-brand-400"
-              >
-                <span className="font-medium text-slate-800">
-                  <UserCheck className="h-3.5 w-3.5 inline mr-1 text-brand-600" />
-                  Amina Wanjiku (Approved Ambassador)
-                </span>
-                <span className="text-[11px] text-slate-500">Silver Tier</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => quickFill("Samcreativedesignschool@gmail.com")}
-                className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-left hover:border-brand-400"
-              >
-                <span className="font-medium text-slate-800">
-                  <ShieldCheck className="h-3.5 w-3.5 inline mr-1 text-slate-900" />
-                  Samuel Kimiri (Super Admin)
-                </span>
-                <span className="text-[11px] text-slate-500">Full Admin</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => quickFill("kelvin.mwangi@tuk.ac.ke")}
-                className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-left hover:border-brand-400"
-              >
-                <span className="font-medium text-slate-800">
-                  Kelvin Mwangi (Pending Applicant)
-                </span>
-                <span className="text-[11px] text-amber-700">Pending Review</span>
-              </button>
-            </div>
-          </div>
 
           <p className="text-center text-xs text-slate-600">
             Want to join the ambassador program?{" "}

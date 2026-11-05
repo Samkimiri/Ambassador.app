@@ -38,6 +38,7 @@ export type AssetCategory =
 export interface Profile {
   id: string;
   email: string;
+  password?: string;
   fullName: string;
   phone: string;
   avatarUrl?: string;

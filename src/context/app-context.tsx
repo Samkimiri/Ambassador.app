@@ -40,7 +40,10 @@ interface AppContextValue {
   isSupabaseLive: boolean;
   capturedReferralCode: string | null;
   // Auth & Role switcher (for testing & demo verification)
-  signInWithEmail: (email: string) => { ok: boolean; error?: string; user?: Profile };
+  signInWithEmail: (
+    email: string,
+    password?: string
+  ) => { ok: boolean; error?: string; user?: Profile };
   signOut: () => void;
   switchDemoPersona: (role: "super_admin" | "ambassador" | "pending_applicant" | "guest") => void;
   resetDemoData: () => void;
@@ -181,16 +184,32 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       ) || null
     : null;
 
-  const signInWithEmail = (email: string) => {
+  const signInWithEmail = (email: string, password?: string) => {
     const clean = email.trim().toLowerCase();
     const profile = db.profiles.find((p) => p.email.toLowerCase() === clean);
     if (!profile) {
       return {
         ok: false,
-        error:
-          "No account found with that email. Try one of the seeded accounts or submit an Ambassador Application first.",
+        error: "No account found with this email. Please check your spelling or apply to become an ambassador.",
       };
     }
+
+    // Password verification check
+    if (profile.password && password && profile.password !== password) {
+      return {
+        ok: false,
+        error: "Incorrect password. Please enter the valid password for your account.",
+      };
+    }
+
+    // Check account status
+    if (profile.status === "suspended") {
+      return {
+        ok: false,
+        error: "This account has been temporarily suspended. Please contact SCDS support.",
+      };
+    }
+
     setCurrentUserId(profile.id);
     return { ok: true, user: profile };
   };

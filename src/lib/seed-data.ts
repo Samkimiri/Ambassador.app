@@ -367,6 +367,7 @@ export const INITIAL_DATABASE_STATE: AppDatabaseState = {
     {
       id: "user-admin-1",
       email: "Samcreativedesignschool@gmail.com",
+      password: "Admin@SCDS2026!#Sam",
       fullName: "Samuel Ndung'u Kimiri",
       phone: "0748201131",
       role: "super_admin",

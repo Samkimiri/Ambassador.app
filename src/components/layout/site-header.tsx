@@ -4,10 +4,8 @@ import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  Database,
   ExternalLink,
   Menu,
-  RefreshCw,
   ShieldCheck,
   Sparkles,
   UserCheck,
@@ -17,22 +15,10 @@ import { useApp } from "@/context/app-context";
 import { cn } from "@/lib/utils";
 
 export function EnvironmentBanner() {
-  const {
-    isSupabaseLive,
-    currentUser,
-    switchDemoPersona,
-    resetDemoData,
-    capturedReferralCode,
-  } = useApp();
+  const { capturedReferralCode } = useApp();
 
-  // If running in production with live Supabase or configured to hide demo banner in production
-  const isProduction = process.env.NODE_ENV === "production" && isSupabaseLive;
-  if (isProduction && !capturedReferralCode) {
-    return null;
-  }
-
-  // If in production with Supabase live and a referral code is captured, only show referral attribution badge
-  if (isProduction && capturedReferralCode) {
+  // If a referral code was captured via referral link (/join?ref=CODE), show the learner attribution badge
+  if (capturedReferralCode) {
     return (
       <div className="border-b border-navy-800 bg-navy-950 text-white text-xs py-1.5 px-4 text-center">
         <span className="inline-flex items-center gap-1 rounded-full bg-gold-400 text-navy-900 px-3 py-0.5 font-bold">
@@ -43,96 +29,8 @@ export function EnvironmentBanner() {
     );
   }
 
-  return (
-    <div className="border-b border-navy-800 bg-navy-900 text-white text-xs">
-      <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-2 px-4 py-2">
-        <div className="flex flex-wrap items-center gap-2">
-          <span
-            className={cn(
-              "inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 font-semibold",
-              isSupabaseLive
-                ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
-                : "bg-brand-600 text-white border border-brand-400/40"
-            )}
-          >
-            <Database className="h-3 w-3 text-gold-400" />
-            {isSupabaseLive
-              ? "Production Mode (Supabase Connected)"
-              : "Development / Demo Mode (Local Stateful Persistence)"}
-          </span>
-          {capturedReferralCode && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-gold-400 text-navy-900 px-2.5 py-0.5 font-bold">
-              <Sparkles className="h-3 w-3" />
-              Referral Attribution: <strong>{capturedReferralCode}</strong>
-            </span>
-          )}
-        </div>
-
-        <div className="flex flex-wrap items-center gap-1.5">
-          <span className="text-brand-200 hidden sm:inline font-medium">
-            Quick Role Switcher:
-          </span>
-          <button
-            type="button"
-            onClick={() => switchDemoPersona("ambassador")}
-            className={cn(
-              "rounded-md px-2.5 py-1 transition font-semibold",
-              currentUser?.role === "ambassador"
-                ? "bg-gold-400 text-navy-900 shadow-sm"
-                : "bg-navy-800 text-brand-100 hover:bg-brand-600 hover:text-white"
-            )}
-          >
-            Ambassador (Amina)
-          </button>
-          <button
-            type="button"
-            onClick={() => switchDemoPersona("super_admin")}
-            className={cn(
-              "rounded-md px-2.5 py-1 transition font-semibold",
-              currentUser?.role === "super_admin"
-                ? "bg-gold-400 text-navy-900 shadow-sm"
-                : "bg-navy-800 text-brand-100 hover:bg-brand-600 hover:text-white"
-            )}
-          >
-            Super Admin (Samuel Kimiri)
-          </button>
-          <button
-            type="button"
-            onClick={() => switchDemoPersona("pending_applicant")}
-            className={cn(
-              "rounded-md px-2.5 py-1 transition font-semibold",
-              currentUser?.status === "pending"
-                ? "bg-gold-400 text-navy-900 shadow-sm"
-                : "bg-navy-800 text-brand-100 hover:bg-brand-600 hover:text-white"
-            )}
-          >
-            Pending Applicant
-          </button>
-          <button
-            type="button"
-            onClick={() => switchDemoPersona("guest")}
-            className={cn(
-              "rounded-md px-2.5 py-1 transition font-semibold",
-              !currentUser
-                ? "bg-gold-400 text-navy-900 shadow-sm"
-                : "bg-navy-800 text-brand-100 hover:bg-brand-600 hover:text-white"
-            )}
-          >
-            Prospective Learner
-          </button>
-          <button
-            type="button"
-            onClick={resetDemoData}
-            title="Reset local demo database to initial seeded state"
-            className="inline-flex items-center gap-1 rounded-md border border-brand-400/30 bg-navy-800 px-2.5 py-1 text-brand-100 hover:bg-brand-600 hover:text-white"
-          >
-            <RefreshCw className="h-3 w-3" />
-            Reset
-          </button>
-        </div>
-      </div>
-    </div>
-  );
+  // Entire demo banner and role switchers permanently removed
+  return null;
 }
 
 export function PublicNavbar() {
