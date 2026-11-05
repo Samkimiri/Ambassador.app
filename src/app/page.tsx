@@ -2,6 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
+import Image from "next/image";
 import {
   ArrowRight,
   Award,
@@ -108,7 +109,31 @@ export default function HomePage() {
                 </div>
               </div>
 
-              <div className="lg:col-span-5">
+              <div className="lg:col-span-5 space-y-6">
+                {/* Hero Ambassador Community Image Card */}
+                <div className="relative overflow-hidden rounded-2xl border-2 border-gold-400/40 shadow-2xl group">
+                  <div className="relative h-64 sm:h-72 w-full">
+                    <Image
+                      src="/hero-ambassadors.jpg"
+                      alt="SCDS Student Ambassadors engaging and guiding prospective students"
+                      fill
+                      priority
+                      className="object-cover transition-transform duration-500 group-hover:scale-105"
+                      sizes="(max-width: 768px) 100vw, 500px"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-navy-950/90 via-navy-900/30 to-transparent" />
+                  </div>
+                  <div className="absolute bottom-0 inset-x-0 p-4 sm:p-5 text-white">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-gold-400 text-navy-900 px-2.5 py-0.5 text-[11px] font-extrabold mb-1.5 shadow-sm">
+                      <Users className="h-3 w-3" />
+                      SCDS Student Ambassador Community
+                    </span>
+                    <p className="text-sm font-semibold text-white drop-shadow">
+                      Connecting passionate learners with hands-on creative &amp; technical mentorship.
+                    </p>
+                  </div>
+                </div>
+
                 <div className="rounded-2xl border border-navy-800 bg-navy-900 p-6 shadow-xl space-y-5">
                   <div className="flex items-center justify-between border-b border-white/15 pb-4">
                     <div>

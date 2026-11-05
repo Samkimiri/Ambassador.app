@@ -129,7 +129,7 @@ export default function LoginPage() {
               </button>
               <button
                 type="button"
-                onClick={() => quickFill("samcreativegraphics7@gmail.com")}
+                onClick={() => quickFill("Samcreativedesignschool@gmail.com")}
                 className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-left hover:border-brand-400"
               >
                 <span className="font-medium text-slate-800">

@@ -150,3 +150,18 @@ INSERT INTO public.badges (code, name, description, icon_name, criteria_type, cr
 ('scds_elite_fellow', 'SCDS Elite Fellow', 'Reached 15+ verified enrolments with impeccable attribution integrity.', 'Crown', 'verified_enrolments', 15)
 ON CONFLICT (code) DO NOTHING;
 
+
+-- 4. Seed Super Administrator Profile (Samuel Kimiri)
+INSERT INTO public.profiles (
+  id, email, full_name, phone, role, status
+) VALUES (
+  '00000000-0000-0000-0000-000000000001'::uuid,
+  'Samcreativedesignschool@gmail.com',
+  'Samuel Ndung''u Kimiri',
+  '0748201131',
+  'super_admin',
+  'active'
+) ON CONFLICT (id) DO UPDATE SET
+  email = EXCLUDED.email,
+  role = 'super_admin',
+  status = 'active';

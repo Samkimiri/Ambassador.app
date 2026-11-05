@@ -366,7 +366,7 @@ export const INITIAL_DATABASE_STATE: AppDatabaseState = {
   profiles: [
     {
       id: "user-admin-1",
-      email: "samcreativegraphics7@gmail.com",
+      email: "Samcreativedesignschool@gmail.com",
       fullName: "Samuel Ndung'u Kimiri",
       phone: "0748201131",
       role: "super_admin",
@@ -1200,7 +1200,7 @@ export const INITIAL_DATABASE_STATE: AppDatabaseState = {
     {
       id: "audit-1",
       actorId: "user-admin-1",
-      actorEmail: "samcreativegraphics7@gmail.com",
+      actorEmail: "Samcreativedesignschool@gmail.com",
       actorRole: "super_admin",
       action: "VERIFY_ENROLMENT",
       entityType: "enrolment",
@@ -1212,7 +1212,7 @@ export const INITIAL_DATABASE_STATE: AppDatabaseState = {
     {
       id: "audit-2",
       actorId: "user-admin-1",
-      actorEmail: "samcreativegraphics7@gmail.com",
+      actorEmail: "Samcreativedesignschool@gmail.com",
       actorRole: "super_admin",
       action: "VERIFY_ENROLMENT",
       entityType: "enrolment",
@@ -1224,7 +1224,7 @@ export const INITIAL_DATABASE_STATE: AppDatabaseState = {
     {
       id: "audit-3",
       actorId: "user-admin-1",
-      actorEmail: "samcreativegraphics7@gmail.com",
+      actorEmail: "Samcreativedesignschool@gmail.com",
       actorRole: "super_admin",
       action: "VERIFY_ENROLMENT",
       entityType: "enrolment",
