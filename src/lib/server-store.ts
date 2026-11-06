@@ -68,3 +68,4 @@ export function savePersistentDb(state: AppDatabaseState): void {
     console.error("Failed to write to persistent db:", err);
   }
 }
+
