@@ -52,7 +52,7 @@ interface AppContextValue {
   // Mutations
   submitApplication: (
     input: Parameters<typeof submitAmbassadorApplicationOp>[1]
-  ) => AmbassadorApplication;
+  ) => Promise<AmbassadorApplication>;
   reviewApplication: (
     applicationId: string,
     decision: "approved" | "rejected" | "suspended",
@@ -130,8 +130,34 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         const serverDb = (await res.json()) as AppDatabaseState;
         if (serverDb && Array.isArray(serverDb.applications)) {
           setDb((prev) => {
-            // Merge logic: ensure applications, referrals, and profiles from server are up to date
-            return serverDb;
+            // Intelligent merge: preserve local applications that are newer than server
+            const appMap = new Map(serverDb.applications.map((a) => [a.id, a]));
+            for (const localApp of prev.applications) {
+              if (!appMap.has(localApp.id)) {
+                appMap.set(localApp.id, localApp);
+              }
+            }
+
+            const profileMap = new Map(serverDb.profiles.map((p) => [p.id, p]));
+            for (const localProf of prev.profiles) {
+              if (!profileMap.has(localProf.id)) {
+                profileMap.set(localProf.id, localProf);
+              }
+            }
+
+            const refMap = new Map(serverDb.referrals.map((r) => [r.id, r]));
+            for (const localRef of prev.referrals) {
+              if (!refMap.has(localRef.id)) {
+                refMap.set(localRef.id, localRef);
+              }
+            }
+
+            return {
+              ...serverDb,
+              applications: Array.from(appMap.values()),
+              profiles: Array.from(profileMap.values()),
+              referrals: Array.from(refMap.values()),
+            };
           });
           try {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(serverDb));
@@ -187,21 +213,24 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
   }, [db, hydrated]);
 
-  // Push mutations to server
-  const broadcastDbChange = (next: AppDatabaseState) => {
+  // Push mutations to server with keepalive for reliable cross-page navigation delivery
+  const broadcastDbChange = async (next: AppDatabaseState) => {
     setDb(next);
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
     } catch {
       // Ignore
     }
-    fetch("/api/sync", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(next),
-    }).catch(() => {
-      // Offline fallback
-    });
+    try {
+      await fetch("/api/sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(next),
+        keepalive: true,
+      });
+    } catch (err) {
+      console.warn("Could not sync with server immediately:", err);
+    }
   };
 
   useEffect(() => {
@@ -306,19 +335,19 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setDb((prev) => recordReferralClickOp(prev, clean));
   };
 
-  const submitApplication = (
+  const submitApplication = async (
     input: Parameters<typeof submitAmbassadorApplicationOp>[1]
   ) => {
     const { nextState, application, profile } = submitAmbassadorApplicationOp(
       db,
       input
     );
-    broadcastDbChange(nextState);
+    await broadcastDbChange(nextState);
     setCurrentUserId(profile.id);
     return application;
   };
 
-  const reviewApplication = (
+  const reviewApplication = async (
     applicationId: string,
     decision: "approved" | "rejected" | "suspended",
     reviewNotes?: string
@@ -330,7 +359,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       decision,
       reviewNotes,
     });
-    broadcastDbChange(nextState);
+    await broadcastDbChange(nextState);
   };
 
   const submitLearnerEnquiry = (

@@ -15,12 +15,12 @@ export default function AdminApplicationsPage() {
     (a) => filter === "ALL" || a.status === filter
   );
 
-  const handleReview = (
+  const handleReview = async (
     id: string,
     decision: "approved" | "rejected" | "suspended",
     name: string
   ) => {
-    reviewApplication(id, decision, notesMap[id]);
+    await reviewApplication(id, decision, notesMap[id]);
     setFeedback(
       `Application for ${name} marked as ${decision.toUpperCase()}. ${
         decision === "approved"

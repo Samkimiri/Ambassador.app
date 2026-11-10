@@ -26,9 +26,10 @@ export default function RegisterApplicationPage() {
   const [motivation, setMotivation] = useState("");
   const [experience, setExperience] = useState("");
   const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
@@ -55,9 +56,11 @@ export default function RegisterApplicationPage() {
     }
 
     try {
-      submitApplication(parsed.data);
+      setIsSubmitting(true);
+      await submitApplication(parsed.data);
       router.push("/dashboard");
     } catch (err) {
+      setIsSubmitting(false);
       setError(
         err instanceof Error ? err.message : "Failed to submit application."
       );
@@ -273,9 +276,12 @@ export default function RegisterApplicationPage() {
 
             <button
               type="submit"
-              className="w-full rounded-xl bg-brand-600 py-3.5 text-sm font-semibold text-white shadow-sm hover:bg-brand-700 transition"
+              disabled={isSubmitting}
+              className="w-full rounded-xl bg-brand-600 py-3.5 text-sm font-semibold text-white shadow-sm hover:bg-brand-700 transition disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              Submit Ambassador Application
+              {isSubmitting
+                ? "Submitting Application..."
+                : "Submit Ambassador Application"}
             </button>
           </form>
 

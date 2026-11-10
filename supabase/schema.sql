@@ -8,6 +8,25 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 -- ------------------------------------------------------------------------------
+-- 0. APP_STATE TABLE (Real-Time Cross-Device State Sync)
+-- ------------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS public.app_state (
+  key TEXT PRIMARY KEY,
+  state JSONB NOT NULL,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+ALTER TABLE public.app_state ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Allow public read of app_state" ON public.app_state;
+CREATE POLICY "Allow public read of app_state" ON public.app_state
+  FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Allow public upsert of app_state" ON public.app_state;
+CREATE POLICY "Allow public upsert of app_state" ON public.app_state
+  FOR ALL USING (true) WITH CHECK (true);
+
+-- ------------------------------------------------------------------------------
 -- 1. PROFILES TABLE (Linked to auth.users)
 -- ------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.profiles (
