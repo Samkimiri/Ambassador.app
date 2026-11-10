@@ -690,17 +690,89 @@ INSERT INTO public.badges (code, name, description, icon_name, criteria_type, cr
 ON CONFLICT (code) DO NOTHING;
 
 
--- 4. Seed Super Administrator Profile (Samuel Kimiri)
-INSERT INTO public.profiles (
-  id, email, full_name, phone, role, status
-) VALUES (
-  '00000000-0000-0000-0000-000000000001'::uuid,
-  'Samcreativedesignschool@gmail.com',
-  'Samuel Ndung''u Kimiri',
-  '0748201131',
-  'super_admin',
-  'active'
-) ON CONFLICT (id) DO UPDATE SET
-  email = EXCLUDED.email,
-  role = 'super_admin',
-  status = 'active';
+-- 4. Seed Super Administrator in auth.users and public.profiles
+DO $$
+DECLARE
+  admin_id uuid := '00000000-0000-0000-0000-000000000001'::uuid;
+  admin_email text := 'Samcreativedesignschool@gmail.com';
+BEGIN
+  -- Insert into auth.users if not present
+  IF NOT EXISTS (SELECT 1 FROM auth.users WHERE email = admin_email) THEN
+    INSERT INTO auth.users (
+      instance_id,
+      id,
+      aud,
+      role,
+      email,
+      encrypted_password,
+      email_confirmed_at,
+      raw_app_meta_data,
+      raw_user_meta_data,
+      created_at,
+      updated_at,
+      confirmation_token,
+      recovery_token
+    ) VALUES (
+      '00000000-0000-0000-0000-000000000000'::uuid,
+      admin_id,
+      'authenticated',
+      'authenticated',
+      admin_email,
+      crypt('Admin@SCDS2026!#Sam', gen_salt('bf')),
+      now(),
+      '{"provider":"email","providers":["email"]}'::jsonb,
+      '{"full_name":"Samuel Ndung''u Kimiri"}'::jsonb,
+      now(),
+      now(),
+      '',
+      ''
+    );
+  ELSE
+    SELECT id INTO admin_id FROM auth.users WHERE email = admin_email LIMIT 1;
+  END IF;
+
+  -- Upsert into public.profiles
+  INSERT INTO public.profiles (
+    id, email, full_name, phone, role, status
+  ) VALUES (
+    admin_id,
+    admin_email,
+    'Samuel Ndung''u Kimiri',
+    '0748201131',
+    'super_admin',
+    'active'
+  ) ON CONFLICT (id) DO UPDATE SET
+    email = EXCLUDED.email,
+    role = 'super_admin',
+    status = 'active';
+END $$;
+
+-- 5. Auto-sync new Supabase Auth sign-ups to public.profiles
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO public.profiles (id, email, full_name, role, status)
+  VALUES (
+    new.id,
+    new.email,
+    COALESCE(new.raw_user_meta_data->>'full_name', split_part(new.email, '@', 1)),
+    CASE
+      WHEN LOWER(new.email) = 'samcreativedesignschool@gmail.com' THEN 'super_admin'
+      ELSE 'learner'
+    END,
+    'active'
+  )
+  ON CONFLICT (id) DO UPDATE SET
+    email = EXCLUDED.email,
+    role = CASE
+      WHEN LOWER(new.email) = 'samcreativedesignschool@gmail.com' THEN 'super_admin'
+      ELSE public.profiles.role
+    END;
+  RETURN new;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
