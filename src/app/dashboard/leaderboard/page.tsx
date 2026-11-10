@@ -35,7 +35,7 @@ export default function DashboardLeaderboardPage() {
           className="rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700"
         >
           <option value="all_time">All-Time Performance</option>
-          <option value="current_month">Current Month (October 2026)</option>
+          <option value="current_month">Current Month</option>
         </select>
       </div>
 

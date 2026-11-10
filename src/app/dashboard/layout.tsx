@@ -56,8 +56,7 @@ export default function DashboardLayout({
             Authentication Required
           </h1>
           <p className="text-xs text-slate-600">
-            Please sign in with your ambassador account or use the Quick Role
-            Switcher in the top bar to preview the Ambassador Dashboard.
+            Please sign in with your authorized ambassador account or submit a new application to join the team.
           </p>
           <div className="flex justify-center gap-3 pt-2">
             <Link

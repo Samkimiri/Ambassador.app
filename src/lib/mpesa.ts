@@ -333,9 +333,10 @@ export async function initiateB2cPayout(
     Remarks: params.remarks.slice(0, 100),
     QueueTimeOutURL:
       params.queueTimeOutUrl ||
-      `${process.env.NEXT_PUBLIC_APP_URL}/api/mpesa/b2c/timeout`,
+      `${process.env.NEXT_PUBLIC_APP_URL || "https://ambassadors.samcreativedesignschool.com"}/api/mpesa/b2c/timeout`,
     ResultURL:
-      params.resultUrl || `${process.env.NEXT_PUBLIC_APP_URL}/api/mpesa/b2c/result`,
+      params.resultUrl ||
+      `${process.env.NEXT_PUBLIC_APP_URL || "https://ambassadors.samcreativedesignschool.com"}/api/mpesa/b2c/result`,
     Occasion: (params.occasion || "SCDS Commission Payout").slice(0, 100),
   };
 

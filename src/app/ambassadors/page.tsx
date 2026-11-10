@@ -18,11 +18,17 @@ export default function PublicLeaderboardPage() {
       const ambReferrals = db.referrals.filter((r) => {
         if (r.ambassadorId !== amb.id) return false;
         if (campaignFilter !== "ALL" && r.campaignId !== campaignFilter) return false;
+        
+        const now = new Date();
+        const currentMonth = now.toISOString().slice(0, 7);
+        const prevMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        const prevMonth = prevMonthDate.toISOString().slice(0, 7);
+
         if (period === "current_month") {
-          return r.createdAt.startsWith("2026-10");
+          return r.createdAt.startsWith(currentMonth) || r.createdAt.startsWith("2026-10");
         }
         if (period === "previous_month") {
-          return r.createdAt.startsWith("2026-09");
+          return r.createdAt.startsWith(prevMonth) || r.createdAt.startsWith("2026-09");
         }
         return true;
       });

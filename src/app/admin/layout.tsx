@@ -45,7 +45,7 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const { currentUser, switchDemoPersona, db } = useApp();
+  const { currentUser, db } = useApp();
 
   if (!currentUser || currentUser.role !== "super_admin") {
     return (
@@ -63,16 +63,15 @@ export default function AdminLayout({
             records or modify roles.
           </p>
           <div className="flex flex-wrap justify-center gap-2 pt-2">
-            <button
-              type="button"
-              onClick={() => switchDemoPersona("super_admin")}
-              className="rounded-xl bg-slate-950 px-4 py-2.5 text-xs font-semibold text-white hover:bg-slate-800"
+            <Link
+              href="/auth/login"
+              className="rounded-xl bg-brand-600 px-4 py-2.5 text-xs font-semibold text-white hover:bg-brand-700 transition"
             >
-              Switch to Super Admin (Demo)
-            </button>
+              Sign In as Administrator
+            </Link>
             <Link
               href="/dashboard"
-              className="rounded-xl border border-slate-300 px-4 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+              className="rounded-xl border border-slate-300 px-4 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition"
             >
               Return to Ambassador Portal
             </Link>
