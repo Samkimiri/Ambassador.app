@@ -1,3 +1,5 @@
+import { getAppUrl } from "@/lib/utils";
+
 /**
  * SCDS Ambassador Hub — Safaricom Daraja M-Pesa Integration Service
  * Supports:
@@ -80,7 +82,7 @@ export function getMpesaConfig(): MpesaConfig {
     securityCredential: process.env.MPESA_SECURITY_CREDENTIAL || "",
     callbackUrl:
       process.env.MPESA_CALLBACK_URL ||
-      `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/api/mpesa/callback`,
+      `${getAppUrl()}/api/mpesa/callback`,
   };
 }
 
@@ -333,10 +335,10 @@ export async function initiateB2cPayout(
     Remarks: params.remarks.slice(0, 100),
     QueueTimeOutURL:
       params.queueTimeOutUrl ||
-      `${process.env.NEXT_PUBLIC_APP_URL || "https://ambassadors.samcreativedesignschool.com"}/api/mpesa/b2c/timeout`,
+      `${getAppUrl()}/api/mpesa/b2c/timeout`,
     ResultURL:
       params.resultUrl ||
-      `${process.env.NEXT_PUBLIC_APP_URL || "https://ambassadors.samcreativedesignschool.com"}/api/mpesa/b2c/result`,
+      `${getAppUrl()}/api/mpesa/b2c/result`,
     Occasion: (params.occasion || "SCDS Commission Payout").slice(0, 100),
   };
 

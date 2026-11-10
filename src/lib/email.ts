@@ -7,6 +7,8 @@
  * - Supporting Charcoal (#252525) & Off-White (#F5F8FF)
  */
 
+import { getAppUrl } from "@/lib/utils";
+
 export interface EmailMessage {
   to: string;
   toName?: string;
@@ -79,10 +81,8 @@ export function buildApplicationApprovedEmail(params: {
   referralCode: string;
   dashboardUrl?: string;
 }): EmailMessage {
-  const url =
-    params.dashboardUrl ||
-    `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/dashboard`;
-  const shareLink = `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/join?ref=${params.referralCode}`;
+  const url = params.dashboardUrl || `${getAppUrl()}/dashboard`;
+  const shareLink = `${getAppUrl()}/join?ref=${params.referralCode}`;
 
   const html = wrapInScdsEmailLayout(
     "Welcome to SCDS Ambassador Hub!",
@@ -132,9 +132,7 @@ export function buildEnrolmentVerifiedEmail(params: {
   newAvailableCommissionKes: number;
   dashboardUrl?: string;
 }): EmailMessage {
-  const url =
-    params.dashboardUrl ||
-    `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/dashboard/rewards`;
+  const url = params.dashboardUrl || `${getAppUrl()}/dashboard/rewards`;
 
   const html = wrapInScdsEmailLayout(
     "Enrolment Verified — Commission Awarded!",

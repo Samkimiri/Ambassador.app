@@ -1,9 +1,9 @@
 import { MetadataRoute } from "next";
 import { INITIAL_DATABASE_STATE } from "@/lib/seed-data";
+import { getAppUrl } from "@/lib/utils";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl =
-    process.env.NEXT_PUBLIC_APP_URL || "https://ambassadors.samcreativedesignschool.com";
+  const baseUrl = getAppUrl();
   const now = new Date();
 
   // Core public routes

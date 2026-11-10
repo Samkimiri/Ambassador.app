@@ -6,6 +6,20 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+/**
+ * Normalizes public application base URL with fallbacks for Vercel and local dev.
+ */
+export function getAppUrl(): string {
+  const envUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL;
+  if (envUrl) {
+    return envUrl.replace(/\/+$/, "");
+  }
+  if (process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL.replace(/\/+$/, "")}`;
+  }
+  return "https://ambassadors.samcreativedesignschool.com";
+}
+
 export function formatKes(amount: number, currency = "KES"): string {
   return `${currency} ${amount.toLocaleString("en-KE", {
     minimumFractionDigits: 0,

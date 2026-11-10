@@ -16,7 +16,7 @@ export async function GET() {
       services: {
         supabase: {
           configured: isSupabaseConfigured(),
-          url: process.env.NEXT_PUBLIC_SUPABASE_URL
+          url: isSupabaseConfigured()
             ? "configured"
             : "demo-mode-local-storage",
         },

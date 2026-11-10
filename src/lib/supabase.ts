@@ -1,9 +1,25 @@
 import { createBrowserClient } from "@supabase/ssr";
 import { createClient } from "@supabase/supabase-js";
 
+export function getSupabaseUrl(): string | undefined {
+  return (
+    process.env.NEXT_PUBLIC_SUPABASE_URL ||
+    process.env.SUPABASE_URL ||
+    undefined
+  );
+}
+
+export function getSupabaseAnonKey(): string | undefined {
+  return (
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+    process.env.SUPABASE_ANON_KEY ||
+    undefined
+  );
+}
+
 export function isSupabaseConfigured(): boolean {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const url = getSupabaseUrl();
+  const key = getSupabaseAnonKey();
   return Boolean(url && key && url.startsWith("http"));
 }
 
@@ -11,13 +27,12 @@ export function isSupabaseConfigured(): boolean {
  * Browser-safe Supabase client (uses anon key + RLS)
  */
 export function getSupabaseBrowserClient() {
-  if (!isSupabaseConfigured()) {
+  const url = getSupabaseUrl();
+  const key = getSupabaseAnonKey();
+  if (!url || !key || !url.startsWith("http")) {
     return null;
   }
-  return createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
+  return createBrowserClient(url, key);
 }
 
 /**
@@ -27,8 +42,10 @@ export function getSupabaseServiceClient() {
   if (typeof window !== "undefined") {
     throw new Error("Security Violation: Service client cannot be invoked in the browser.");
   }
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const url = getSupabaseUrl();
+  const serviceKey =
+    process.env.SUPABASE_SERVICE_ROLE_KEY ||
+    process.env.SUPABASE_SERVICE_KEY;
   if (!url || !serviceKey) {
     return null;
   }

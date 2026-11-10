@@ -2,11 +2,10 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { AppProvider } from "@/context/app-context";
 import { PwaManager } from "@/components/pwa/pwa-manager";
+import { getAppUrl } from "@/lib/utils";
 
 export const metadata: Metadata = {
-  metadataBase: new URL(
-    process.env.NEXT_PUBLIC_APP_URL || "https://ambassadors.samcreativedesignschool.com"
-  ),
+  metadataBase: new URL(getAppUrl()),
   title: {
     default: "SCDS Ambassador Hub | Sam Creative Design School",
     template: "%s | SCDS Ambassador Hub",
