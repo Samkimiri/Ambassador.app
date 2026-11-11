@@ -7,6 +7,7 @@ import { ArrowLeft, CheckCircle2, Clock, ExternalLink, Sparkles } from "lucide-r
 import { PublicFooter, PublicNavbar } from "@/components/layout/site-header";
 import { useApp } from "@/context/app-context";
 import { formatKes } from "@/lib/utils";
+import { getSchoolEnrollmentUrl } from "@/lib/enrollment";
 
 export default function CourseDetailPage() {
   const params = useParams<{ slug: string }>();
@@ -124,17 +125,22 @@ export default function CourseDetailPage() {
                   href={`/join?course=${course.slug}${
                     capturedReferralCode ? `&ref=${capturedReferralCode}` : ""
                   }`}
-                  className="block w-full rounded-xl bg-brand-600 py-3 text-center text-sm font-semibold text-white hover:bg-brand-500 transition"
+                  className="block w-full rounded-xl bg-brand-600 py-3 text-center text-sm font-semibold text-white hover:bg-brand-500 transition shadow-sm"
                 >
-                  Submit Course Enquiry / Enroll
+                  Submit Course Enquiry / Reserve Seat
                 </Link>
                 <a
-                  href={course.enrollmentUrl}
+                  href={getSchoolEnrollmentUrl({
+                    courseSlug: course.slug,
+                    customEnrollmentUrl: course.enrollmentUrl,
+                    referralCode: capturedReferralCode || undefined,
+                    source: "scds_course_detail_cta",
+                  })}
                   target="_blank"
-                  rel="noreferrer"
-                  className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-slate-700 bg-slate-900 py-2.5 text-xs font-semibold text-slate-300 hover:bg-slate-800"
+                  rel="noopener noreferrer"
+                  className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-slate-700 bg-slate-900 py-2.5 text-xs font-semibold text-slate-200 hover:bg-slate-800 transition"
                 >
-                  View on Main SCDS Portal <ExternalLink className="h-3.5 w-3.5" />
+                  <span>Enroll &amp; Pay on School Platform</span> <ExternalLink className="h-3.5 w-3.5" />
                 </a>
               </div>
 

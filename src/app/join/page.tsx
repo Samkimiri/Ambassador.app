@@ -3,11 +3,21 @@
 import React, { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { CheckCircle2, ShieldCheck, Sparkles } from "lucide-react";
+import {
+  ArrowRight,
+  CheckCircle2,
+  CreditCard,
+  ExternalLink,
+  GraduationCap,
+  ShieldCheck,
+  Sparkles,
+  UserCheck,
+} from "lucide-react";
 import { PublicFooter, PublicNavbar } from "@/components/layout/site-header";
 import { useApp } from "@/context/app-context";
 import { learnerEnquirySchema } from "@/lib/validations";
 import { formatKes } from "@/lib/utils";
+import { getSchoolEnrollmentUrl } from "@/lib/enrollment";
 import { Referral } from "@/types";
 
 function JoinEnquiryFormContent() {
@@ -89,22 +99,77 @@ function JoinEnquiryFormContent() {
   const selectedCourse = db.courses.find((c) => c.id === courseId);
 
   if (submittedReferral) {
+    const matchedCourse = db.courses.find(
+      (c) => c.id === submittedReferral.courseId || c.title === submittedReferral.courseTitle
+    );
+
+    const schoolPortalEnrollUrl = getSchoolEnrollmentUrl({
+      courseSlug: matchedCourse?.slug,
+      customEnrollmentUrl: matchedCourse?.enrollmentUrl,
+      referralCode: submittedReferral.referralCode,
+      learnerName: submittedReferral.learnerName,
+      learnerEmail: submittedReferral.learnerEmail,
+      learnerPhone: submittedReferral.learnerPhone,
+      source: "scds_ambassador_hub_join",
+    });
+
     return (
-      <div className="mx-auto max-w-2xl rounded-2xl border border-emerald-200 bg-white p-8 shadow-sm space-y-6 text-center">
+      <div className="mx-auto max-w-2xl rounded-2xl border border-emerald-200 bg-white p-6 sm:p-8 shadow-sm space-y-6 text-center">
         <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
           <CheckCircle2 className="h-8 w-8" />
         </div>
         <div className="space-y-2">
           <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 border border-emerald-200">
-            Enquiry Recorded · Reference #{submittedReferral.id.slice(-6).toUpperCase()}
+            Referral Attribution Recorded · Reference #{submittedReferral.id.slice(-6).toUpperCase()}
           </span>
-          <h1 className="text-2xl font-bold text-slate-900">
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900">
             Thank You, {submittedReferral.learnerName}!
           </h1>
           <p className="text-sm text-slate-600">
-            Your enquiry for <strong>{submittedReferral.courseTitle}</strong> has
-            been received by Sam Creative Design School Admissions.
+            Your referral enquiry for <strong>{submittedReferral.courseTitle}</strong> is confirmed.
           </p>
+        </div>
+
+        {/* Primary Action Card: Connect directly to official school website enrollment & payment platform */}
+        <div className="rounded-2xl border-2 border-brand-500 bg-gradient-to-b from-brand-50/60 to-white p-5 sm:p-6 text-left space-y-4 shadow-sm">
+          <div className="flex items-center gap-2 text-brand-900 font-bold text-base">
+            <Sparkles className="h-5 w-5 text-brand-600 shrink-0" />
+            <span>Complete Account Creation &amp; Pay on SCDS Platform</span>
+          </div>
+
+          <p className="text-xs sm:text-sm text-slate-700 leading-relaxed">
+            Your referral attribution code (<strong>{submittedReferral.referralCode}</strong>) is locked in. Click below to connect directly with the official <strong>Sam Creative Design School Enrollment &amp; Payment Platform</strong> where you can create your student LMS account, choose your cohort, and finalize payment via M-Pesa or Card.
+          </p>
+
+          <div className="grid gap-2.5 sm:grid-cols-3 text-xs text-slate-700 bg-white rounded-xl border border-brand-100 p-3.5 shadow-xs">
+            <div className="flex items-center gap-2 font-medium">
+              <UserCheck className="h-4 w-4 text-brand-600 shrink-0" />
+              <span>1. Student Account</span>
+            </div>
+            <div className="flex items-center gap-2 font-medium">
+              <GraduationCap className="h-4 w-4 text-brand-600 shrink-0" />
+              <span>2. Cohort Selection</span>
+            </div>
+            <div className="flex items-center gap-2 font-medium">
+              <CreditCard className="h-4 w-4 text-emerald-600 shrink-0" />
+              <span>3. M-Pesa / Card Pay</span>
+            </div>
+          </div>
+
+          <a
+            href={schoolPortalEnrollUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center gap-2 w-full rounded-xl bg-brand-600 px-5 py-3.5 text-sm sm:text-base font-bold text-white shadow-md shadow-brand-600/20 hover:bg-brand-500 hover:shadow-brand-600/30 transition transform active:scale-[0.99]"
+          >
+            <span>Proceed to SCDS School Enrollment &amp; Payment Portal</span>
+            <ArrowRight className="h-4 w-4" />
+          </a>
+
+          <div className="flex items-center justify-between text-[11px] text-slate-500 border-t border-slate-100 pt-2.5">
+            <span>Official Portal: samcreativedesignschool.com</span>
+            <span className="font-mono text-brand-700 font-semibold">Ref: {submittedReferral.referralCode}</span>
+          </div>
         </div>
 
         <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-left text-xs space-y-1.5 text-slate-600">
@@ -112,18 +177,17 @@ function JoinEnquiryFormContent() {
             <strong>Selected Course:</strong> {submittedReferral.courseTitle}
           </div>
           <div>
-            <strong>Attribution Code Recorded:</strong>{" "}
+            <strong>Attribution Code:</strong>{" "}
             <span className="font-mono font-semibold text-brand-700">
               {submittedReferral.referralCode}
             </span>
           </div>
           <div>
-            <strong>Next Step:</strong> SCDS Admissions (+254 748 201 131) will
-            reach out via WhatsApp/Phone with your Cohort 11 onboarding details.
+            <strong>Admissions Support:</strong> SCDS Admissions (+254 748 201 131) will also follow up on WhatsApp with your student onboarding details.
           </div>
         </div>
 
-        <div className="flex flex-wrap justify-center gap-3">
+        <div className="flex flex-wrap justify-center gap-3 pt-2">
           <Link
             href="/courses"
             className="rounded-xl border border-slate-300 px-4 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
@@ -145,6 +209,16 @@ function JoinEnquiryFormContent() {
     );
   }
 
+  const directSchoolEnrollUrl = getSchoolEnrollmentUrl({
+    courseSlug: selectedCourse?.slug,
+    customEnrollmentUrl: selectedCourse?.enrollmentUrl,
+    referralCode: referralCode || capturedReferralCode || undefined,
+    learnerName: learnerName || undefined,
+    learnerEmail: learnerEmail || undefined,
+    learnerPhone: learnerPhone || undefined,
+    source: "scds_join_direct_link",
+  });
+
   return (
     <div className="grid gap-8 lg:grid-cols-12">
       <div className="lg:col-span-7">
@@ -163,6 +237,22 @@ function JoinEnquiryFormContent() {
               No ambassador account is required to enquire or enroll. Fill out
               your details below.
             </p>
+          </div>
+
+          <div className="rounded-xl border border-brand-200 bg-brand-50/70 p-3.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+            <div className="text-slate-700">
+              <span className="font-semibold text-brand-900">Ready to enroll and pay right now?</span>
+              <span className="block text-slate-600">You can connect straight to the official SCDS school portal with your referral code attached.</span>
+            </div>
+            <a
+              href={directSchoolEnrollUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="shrink-0 inline-flex items-center gap-1.5 rounded-lg bg-brand-600 px-3.5 py-2 font-semibold text-white hover:bg-brand-700 transition"
+            >
+              <span>Go to School Portal</span>
+              <ExternalLink className="h-3.5 w-3.5" />
+            </a>
           </div>
 
           {error && (
