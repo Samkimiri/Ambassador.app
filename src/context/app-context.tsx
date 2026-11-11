@@ -1,7 +1,9 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useRef, useState } from "react";
+import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { AppDatabaseState, INITIAL_DATABASE_STATE } from "@/lib/seed-data";
+import { ensureStateConsistency } from "@/lib/consistency";
+import { generateReferralCode } from "@/lib/utils";
 import {
   AmbassadorApplication,
   AmbassadorProfile,
@@ -146,6 +148,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         }
       }
 
+      const ambMap = new Map(serverDb.ambassadors.map((a) => [a.id, a]));
+      for (const localAmb of prev.ambassadors) {
+        if (!ambMap.has(localAmb.id)) {
+          ambMap.set(localAmb.id, localAmb);
+        }
+      }
+
       const refMap = new Map(serverDb.referrals.map((r) => [r.id, r]));
       for (const localRef of prev.referrals) {
         if (!refMap.has(localRef.id)) {
@@ -160,13 +169,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         }
       }
 
-      return {
+      const mergedState: AppDatabaseState = {
         ...serverDb,
         applications: Array.from(appMap.values()),
         profiles: Array.from(profileMap.values()),
+        ambassadors: Array.from(ambMap.values()),
         referrals: Array.from(refMap.values()),
         payoutRequests: Array.from(payoutMap.values()),
       };
+
+      return ensureStateConsistency(mergedState);
     });
 
     try {
@@ -350,30 +362,125 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const currentUser =
     db.profiles.find((p) => p.id === currentUserId) || null;
 
-  const currentAmbassador = currentUser
-    ? db.ambassadors.find(
-        (a) =>
-          a.userId === currentUser.id ||
-          a.email.toLowerCase() === currentUser.email.toLowerCase()
-      ) || null
-    : null;
-
   const currentApplication = currentUser
     ? db.applications.find(
         (a) =>
-          a.userId === currentUser.id ||
+          (currentUser.id && a.userId === currentUser.id) ||
           a.email.toLowerCase() === currentUser.email.toLowerCase()
       ) || null
     : null;
 
+  const currentAmbassador = useMemo(() => {
+    if (!currentUser) return null;
+
+    const cleanEmail = currentUser.email.toLowerCase();
+    const existing = db.ambassadors.find(
+      (a) =>
+        a.userId === currentUser.id ||
+        a.email.toLowerCase() === cleanEmail
+    );
+
+    if (existing) {
+      if (
+        (currentApplication?.status === "approved" || currentUser.role === "ambassador") &&
+        !existing.isActive
+      ) {
+        return { ...existing, isActive: true };
+      }
+      return existing;
+    }
+
+    // Auto-synthesize active ambassador profile if approved by admin
+    if (
+      currentApplication?.status === "approved" ||
+      currentUser.role === "ambassador"
+    ) {
+      const existingCodes = db.ambassadors.map((a) => a.referralCode);
+      const referralCode = generateReferralCode(
+        currentUser.fullName || currentApplication?.fullName || "Ambassador",
+        existingCodes
+      );
+      const newAmb: AmbassadorProfile = {
+        id: `amb-${currentUser.id}`,
+        userId: currentUser.id,
+        fullName: currentUser.fullName || currentApplication?.fullName || "Ambassador",
+        email: currentUser.email,
+        phone: currentUser.phone || currentApplication?.phone || "",
+        referralCode,
+        level: "Starter",
+        totalPoints: 0,
+        availablePoints: 0,
+        totalCommissionKes: 0,
+        availableCommissionKes: 0,
+        paidCommissionKes: 0,
+        payoutMethod: "MPESA",
+        payoutPhone: currentUser.phone || currentApplication?.phone || "",
+        county: currentApplication?.county || "Nairobi",
+        institution: currentApplication?.institution || "",
+        occupation: currentApplication?.occupation || "Ambassador",
+        bio: `${currentApplication?.occupation || "Ambassador"} representing SCDS in ${currentApplication?.county || "Kenya"}.`,
+        isActive: true,
+        clickCount: 0,
+        badgeIds: [],
+        createdAt: currentApplication?.createdAt || new Date().toISOString(),
+      };
+      return newAmb;
+    }
+
+    return null;
+  }, [currentUser, db.ambassadors, currentApplication]);
+
+  // Persist auto-synthesized ambassador to database so it stays permanently active
+  useEffect(() => {
+    if (!currentAmbassador || !currentUser) return;
+    const exists = db.ambassadors.some(
+      (a) =>
+        a.userId === currentAmbassador.userId ||
+        a.email.toLowerCase() === currentAmbassador.email.toLowerCase()
+    );
+    if (!exists) {
+      const nextDb = ensureStateConsistency({
+        ...db,
+        profiles: db.profiles.map((p) =>
+          p.id === currentUser.id
+            ? { ...p, role: "ambassador", status: "active" }
+            : p
+        ),
+        ambassadors: [currentAmbassador, ...db.ambassadors],
+      });
+      broadcastDbChange(nextDb);
+    }
+  }, [currentAmbassador, currentUser, db]);
+
   const signInWithEmail = (email: string, password?: string) => {
     const clean = email.trim().toLowerCase();
-    const profile = db.profiles.find((p) => p.email.toLowerCase() === clean);
+    let profile = db.profiles.find((p) => p.email.toLowerCase() === clean);
+
+    // If profile not yet created in profiles array, recover from applications
     if (!profile) {
-      return {
-        ok: false,
-        error: "No account found with this email. Please check your spelling or apply to become an ambassador.",
-      };
+      const matchingApp = db.applications.find((a) => a.email.toLowerCase() === clean);
+      if (matchingApp) {
+        profile = {
+          id: matchingApp.userId,
+          email: clean,
+          fullName: matchingApp.fullName,
+          phone: matchingApp.phone,
+          role: matchingApp.status === "approved" ? "ambassador" : "learner",
+          status: matchingApp.status === "approved" ? "active" : matchingApp.status === "rejected" ? "rejected" : "pending",
+          createdAt: matchingApp.createdAt || new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+        const nextDb = ensureStateConsistency({
+          ...db,
+          profiles: [profile, ...db.profiles],
+        });
+        broadcastDbChange(nextDb);
+      } else {
+        return {
+          ok: false,
+          error: "No account found with this email. Please check your spelling or apply to become an ambassador.",
+        };
+      }
     }
 
     // Password verification check
@@ -392,12 +499,30 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       };
     }
 
+    // If their application was approved, ensure their profile role is active ambassador
+    const app = db.applications.find(
+      (a) => (a.userId && a.userId === profile!.id) || a.email.toLowerCase() === clean
+    );
+    if (app?.status === "approved" && (profile.role !== "ambassador" || profile.status !== "active")) {
+      profile = { ...profile, role: "ambassador", status: "active" };
+      const nextDb = ensureStateConsistency({
+        ...db,
+        profiles: db.profiles.map((p) => (p.id === profile!.id ? profile! : p)),
+      });
+      broadcastDbChange(nextDb);
+    }
+
     setCurrentUserId(profile.id);
     return { ok: true, user: profile };
   };
 
   const signOut = () => {
     setCurrentUserId(null);
+    try {
+      localStorage.removeItem(SESSION_KEY);
+    } catch {
+      // Ignore
+    }
   };
 
   const switchDemoPersona = (

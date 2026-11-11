@@ -2,7 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   Award,
   Bell,
@@ -41,6 +41,7 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
   const {
     currentUser,
     currentAmbassador,
@@ -48,6 +49,11 @@ export default function DashboardLayout({
     db,
     signOut,
   } = useApp();
+
+  const handleSignOut = () => {
+    signOut();
+    router.push("/auth/login");
+  };
 
   if (!currentUser) {
     return (
@@ -63,13 +69,13 @@ export default function DashboardLayout({
           <div className="flex justify-center gap-3 pt-2">
             <Link
               href="/auth/login"
-              className="rounded-xl bg-brand-600 px-5 py-2.5 text-xs font-semibold text-white"
+              className="rounded-xl bg-brand-600 px-5 py-2.5 text-xs font-semibold text-white hover:bg-brand-700 transition"
             >
               Sign In
             </Link>
             <Link
               href="/auth/register"
-              className="rounded-xl border border-slate-300 px-5 py-2.5 text-xs font-semibold text-slate-700"
+              className="rounded-xl border border-slate-300 px-5 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition"
             >
               Apply Now
             </Link>
@@ -79,34 +85,55 @@ export default function DashboardLayout({
     );
   }
 
-  // Enforce that pending/rejected applicants do NOT get approved ambassador privileges
-  if (
-    currentUser.role !== "super_admin" &&
-    (!currentAmbassador || !currentAmbassador.isActive)
-  ) {
-    const appStatus = currentApplication?.status || currentUser.status;
+  // An ambassador is approved if their application is approved, their role is ambassador/super_admin, or active profile exists
+  const isApproved =
+    currentUser.role === "super_admin" ||
+    currentUser.role === "ambassador" ||
+    currentApplication?.status === "approved" ||
+    (currentAmbassador && currentAmbassador.isActive);
+
+  // If the applicant is not approved (pending, rejected, suspended), show the review status screen
+  if (!isApproved) {
+    const appStatus = currentApplication?.status || currentUser.status || "pending";
+    const isPending = appStatus === "pending";
+    const isRejected = appStatus === "rejected";
+
     return (
       <div className="min-h-[80vh] flex items-center justify-center px-4 py-12">
         <div className="max-w-xl w-full rounded-2xl border border-slate-200 bg-white p-8 space-y-5 shadow-sm">
           <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
+            <div
+              className={`flex h-12 w-12 items-center justify-center rounded-xl ${
+                isPending
+                  ? "bg-amber-100 text-amber-700"
+                  : "bg-rose-100 text-rose-700"
+              }`}
+            >
               <Clock className="h-6 w-6" />
             </div>
             <div>
-              <span className="text-xs font-semibold uppercase tracking-wider text-amber-700">
+              <span
+                className={`text-xs font-semibold uppercase tracking-wider ${
+                  isPending ? "text-amber-700" : "text-rose-700"
+                }`}
+              >
                 Application Status: {appStatus.toUpperCase()}
               </span>
               <h1 className="text-xl font-bold text-slate-900">
-                {appStatus === "pending"
+                {isPending
                   ? "Your Ambassador Application is Under Review"
+                  : isRejected
+                  ? "Ambassador Application Not Approved"
                   : "Ambassador Privileges Restricted"}
               </h1>
             </div>
           </div>
 
           <p className="text-sm text-slate-600 leading-relaxed">
-            {appStatus === "pending"
+            {isPending
               ? "Thank you for applying to the SCDS Ambassador Hub! Our administration team reviews every application before issuing official referral links and marketing materials."
+              : isRejected
+              ? "Thank you for your interest in SCDS. Your application was reviewed and could not be approved at this time. Please contact SCDS Support if you have questions."
               : `Your ambassador account is currently marked as ${appStatus}. Please contact SCDS Support if you have questions.`}
           </p>
 
@@ -142,8 +169,8 @@ export default function DashboardLayout({
             </Link>
             <button
               type="button"
-              onClick={signOut}
-              className="rounded-xl border border-slate-300 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+              onClick={handleSignOut}
+              className="rounded-xl border border-slate-300 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition"
             >
               Sign Out
             </button>
@@ -153,7 +180,14 @@ export default function DashboardLayout({
     );
   }
 
-  const activeAmb = currentAmbassador || db.ambassadors[0];
+  const activeAmb =
+    currentAmbassador ||
+    db.ambassadors.find(
+      (a) =>
+        a.userId === currentUser.id ||
+        a.email.toLowerCase() === currentUser.email.toLowerCase()
+    ) ||
+    db.ambassadors[0];
   const unreadCount = db.notifications.filter(
     (n) => n.userId === activeAmb.userId && !n.isRead
   ).length;
@@ -238,8 +272,8 @@ export default function DashboardLayout({
           </Link>
           <button
             type="button"
-            onClick={signOut}
-            className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50"
+            onClick={handleSignOut}
+            className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 transition"
           >
             <LogOut className="h-4 w-4" /> Sign Out
           </button>
