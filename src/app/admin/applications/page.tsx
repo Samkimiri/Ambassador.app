@@ -1,19 +1,26 @@
 "use client";
 
 import React, { useState } from "react";
-import { CheckCircle2, XCircle } from "lucide-react";
+import { CheckCircle2, Radio, RotateCw, XCircle } from "lucide-react";
 import { useApp } from "@/context/app-context";
 import { formatDate } from "@/lib/utils";
 
 export default function AdminApplicationsPage() {
-  const { db, reviewApplication } = useApp();
+  const { db, reviewApplication, isRealtimeConnected, refreshLiveState } = useApp();
   const [filter, setFilter] = useState("ALL");
   const [notesMap, setNotesMap] = useState<Record<string, string>>({});
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const filtered = db.applications.filter(
     (a) => filter === "ALL" || a.status === filter
   );
+
+  const handleManualRefresh = async () => {
+    setIsRefreshing(true);
+    await refreshLiveState();
+    setTimeout(() => setIsRefreshing(false), 600);
+  };
 
   const handleReview = async (
     id: string,
@@ -35,9 +42,29 @@ export default function AdminApplicationsPage() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
-          <span className="text-xs font-semibold uppercase tracking-wider text-brand-600">
-            Onboarding Governance
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold uppercase tracking-wider text-brand-600">
+              Onboarding Governance
+            </span>
+            <span
+              className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[10px] font-bold ${
+                isRealtimeConnected
+                  ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                  : "bg-blue-50 text-blue-700 border border-blue-200"
+              }`}
+            >
+              <span
+                className={`h-2 w-2 rounded-full ${
+                  isRealtimeConnected
+                    ? "bg-emerald-500 animate-pulse"
+                    : "bg-blue-500"
+                }`}
+              />
+              {isRealtimeConnected
+                ? "Live WebSockets (Push Active)"
+                : "Live Event Sync Active"}
+            </span>
+          </div>
           <h1 className="text-2xl font-extrabold text-slate-900 mt-1">
             Ambassador Applications ({db.applications.length})
           </h1>
@@ -47,17 +74,34 @@ export default function AdminApplicationsPage() {
           </p>
         </div>
 
-        <select
-          value={filter}
-          onChange={(e) => setFilter(e.target.value)}
-          className="rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700"
-        >
-          <option value="ALL">All Applications</option>
-          <option value="pending">Pending Review</option>
-          <option value="approved">Approved</option>
-          <option value="rejected">Rejected</option>
-          <option value="suspended">Suspended</option>
-        </select>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={handleManualRefresh}
+            disabled={isRefreshing}
+            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50 transition"
+            title="Force refresh live database state"
+          >
+            <RotateCw
+              className={`h-3.5 w-3.5 text-slate-500 ${
+                isRefreshing ? "animate-spin text-brand-600" : ""
+              }`}
+            />
+            {isRefreshing ? "Syncing..." : "Refresh"}
+          </button>
+
+          <select
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            className="rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700"
+          >
+            <option value="ALL">All Applications</option>
+            <option value="pending">Pending Review</option>
+            <option value="approved">Approved</option>
+            <option value="rejected">Rejected</option>
+            <option value="suspended">Suspended</option>
+          </select>
+        </div>
       </div>
 
       {feedback && (

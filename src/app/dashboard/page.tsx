@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import {
   Award,
+  BookOpen,
   Check,
   CheckCircle2,
   Coins,
@@ -171,6 +172,35 @@ export default function AmbassadorDashboardPage() {
             </button>
           </div>
         </div>
+      </div>
+
+      {/* Ambassador Operations Playbook Callout */}
+      <div className="rounded-2xl border border-brand-200 bg-gradient-to-r from-brand-50 via-white to-amber-50/50 p-5 sm:p-6 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-start gap-3.5">
+          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-brand-600 text-gold-400 shrink-0 shadow-sm">
+            <BookOpen className="h-5 w-5" />
+          </div>
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <h2 className="text-sm sm:text-base font-extrabold text-slate-900">
+                New to the Program? Read the Ambassador Playbook
+              </h2>
+              <span className="rounded-md bg-gold-400 px-2 py-0.5 text-[10px] font-black uppercase text-navy-900">
+                Essential Guide
+              </span>
+            </div>
+            <p className="text-xs text-slate-600 max-w-xl">
+              Master how to share your links effectively, copy pre-written WhatsApp &amp; TikTok pitch scripts, understand course commission rates, and maximize your earnings.
+            </p>
+          </div>
+        </div>
+
+        <Link
+          href="/dashboard/guide"
+          className="inline-flex items-center justify-center gap-2 rounded-xl bg-brand-600 px-5 py-2.5 text-xs font-bold text-white hover:bg-brand-700 transition shadow-sm shrink-0"
+        >
+          Open Ambassador Guide →
+        </Link>
       </div>
 
       {/* Key Metrics Grid */}

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useRef, useState } from "react";
 import { AppDatabaseState, INITIAL_DATABASE_STATE } from "@/lib/seed-data";
 import {
   AmbassadorApplication,
@@ -25,7 +25,8 @@ import {
   updateReferralStatusOp,
   verifyEnrolmentAndIssueRewardsOp,
 } from "@/lib/store-engine";
-import { isSupabaseConfigured } from "@/lib/supabase";
+import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase";
+import type { RealtimeChannel } from "@supabase/supabase-js";
 import { enqueueOfflineAction } from "@/components/pwa/pwa-manager";
 
 const STORAGE_KEY = "scds_ambassador_hub_state_v1";
@@ -38,6 +39,8 @@ interface AppContextValue {
   currentAmbassador: AmbassadorProfile | null;
   currentApplication: AmbassadorApplication | null;
   isSupabaseLive: boolean;
+  isRealtimeConnected: boolean;
+  refreshLiveState: () => Promise<void>;
   capturedReferralCode: string | null;
   // Auth & Role switcher (for testing & demo verification)
   signInWithEmail: (
@@ -120,50 +123,67 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [capturedReferralCode, setCapturedReferralCode] = useState<string | null>(null);
   const [hydrated, setHydrated] = useState(false);
+  const [isRealtimeConnected, setIsRealtimeConnected] = useState(false);
+  // Ref to active Supabase Realtime Channel
+  const realtimeChannelRef = useRef<RealtimeChannel | null>(null);
 
-  // Sync state across server and clients so applications submitted from public /auth/register or /join
-  // are immediately visible to the admin on their device/browser
+  // Intelligent state merger: applies fresh database state while protecting any pending local creations
+  const applyServerState = (serverDb: AppDatabaseState) => {
+    if (!serverDb || !Array.isArray(serverDb.applications)) return;
+
+    setDb((prev) => {
+      const appMap = new Map(serverDb.applications.map((a) => [a.id, a]));
+      for (const localApp of prev.applications) {
+        if (!appMap.has(localApp.id)) {
+          appMap.set(localApp.id, localApp);
+        }
+      }
+
+      const profileMap = new Map(serverDb.profiles.map((p) => [p.id, p]));
+      for (const localProf of prev.profiles) {
+        if (!profileMap.has(localProf.id)) {
+          profileMap.set(localProf.id, localProf);
+        }
+      }
+
+      const refMap = new Map(serverDb.referrals.map((r) => [r.id, r]));
+      for (const localRef of prev.referrals) {
+        if (!refMap.has(localRef.id)) {
+          refMap.set(localRef.id, localRef);
+        }
+      }
+
+      const payoutMap = new Map((serverDb.payoutRequests || []).map((p) => [p.id, p]));
+      for (const localPayout of prev.payoutRequests || []) {
+        if (!payoutMap.has(localPayout.id)) {
+          payoutMap.set(localPayout.id, localPayout);
+        }
+      }
+
+      return {
+        ...serverDb,
+        applications: Array.from(appMap.values()),
+        profiles: Array.from(profileMap.values()),
+        referrals: Array.from(refMap.values()),
+        payoutRequests: Array.from(payoutMap.values()),
+      };
+    });
+
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(serverDb));
+    } catch {
+      // Ignore quota errors
+    }
+  };
+
+  // Sync state on demand from /api/sync
   const syncWithServer = async () => {
     try {
       const res = await fetch("/api/sync", { cache: "no-store" });
       if (res.ok) {
         const serverDb = (await res.json()) as AppDatabaseState;
         if (serverDb && Array.isArray(serverDb.applications)) {
-          setDb((prev) => {
-            // Intelligent merge: preserve local applications that are newer than server
-            const appMap = new Map(serverDb.applications.map((a) => [a.id, a]));
-            for (const localApp of prev.applications) {
-              if (!appMap.has(localApp.id)) {
-                appMap.set(localApp.id, localApp);
-              }
-            }
-
-            const profileMap = new Map(serverDb.profiles.map((p) => [p.id, p]));
-            for (const localProf of prev.profiles) {
-              if (!profileMap.has(localProf.id)) {
-                profileMap.set(localProf.id, localProf);
-              }
-            }
-
-            const refMap = new Map(serverDb.referrals.map((r) => [r.id, r]));
-            for (const localRef of prev.referrals) {
-              if (!refMap.has(localRef.id)) {
-                refMap.set(localRef.id, localRef);
-              }
-            }
-
-            return {
-              ...serverDb,
-              applications: Array.from(appMap.values()),
-              profiles: Array.from(profileMap.values()),
-              referrals: Array.from(refMap.values()),
-            };
-          });
-          try {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(serverDb));
-          } catch {
-            // Ignore
-          }
+          applyServerState(serverDb);
         }
       }
     } catch {
@@ -196,12 +216,82 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       setHydrated(true);
     }
 
-    // Immediately pull latest server database on mount
+    // 1. Initial server fetch
     syncWithServer();
 
-    // Poll periodically every 5 seconds to ensure real-time admin sync across devices/windows
-    const interval = setInterval(syncWithServer, 5000);
-    return () => clearInterval(interval);
+    // 2. Setup Supabase Realtime WebSockets for instantaneous, zero-polling live updates
+    const supabase = getSupabaseBrowserClient();
+    if (supabase) {
+      try {
+        const channel = supabase.channel("scds-live-updates", {
+          config: {
+            broadcast: { ack: true, self: false },
+          },
+        });
+
+        channel
+          // Postgres Changes: Listens to Supabase database row changes on public.app_state
+          .on(
+            "postgres_changes",
+            {
+              event: "*",
+              schema: "public",
+              table: "app_state",
+            },
+            (payload) => {
+              const newRecord = payload.new as { state?: AppDatabaseState } | undefined;
+              if (newRecord?.state && Array.isArray(newRecord.state.applications)) {
+                applyServerState(newRecord.state);
+              } else {
+                syncWithServer();
+              }
+            }
+          )
+          // Broadcast: Listens to instant peer broadcasts when ambassador applies or requests payout
+          .on(
+            "broadcast",
+            { event: "app_state_mutation" },
+            (payload) => {
+              if (payload?.payload?.state && Array.isArray(payload.payload.state.applications)) {
+                applyServerState(payload.payload.state);
+              } else {
+                syncWithServer();
+              }
+            }
+          )
+          .subscribe((status) => {
+            if (status === "SUBSCRIBED") {
+              setIsRealtimeConnected(true);
+            } else if (status === "CLOSED" || status === "CHANNEL_ERROR") {
+              setIsRealtimeConnected(false);
+            }
+          });
+
+        realtimeChannelRef.current = channel;
+      } catch (err) {
+        console.warn("Could not initialize Supabase Realtime channel:", err);
+      }
+    }
+
+    // 3. Event-driven freshness triggers: sync when window gains focus or network reconnects
+    // (NO continuous setInterval polling needed!)
+    const handleFocus = () => {
+      syncWithServer();
+    };
+    const handleOnline = () => {
+      syncWithServer();
+    };
+
+    window.addEventListener("focus", handleFocus);
+    window.addEventListener("online", handleOnline);
+
+    return () => {
+      if (realtimeChannelRef.current && supabase) {
+        supabase.removeChannel(realtimeChannelRef.current);
+      }
+      window.removeEventListener("focus", handleFocus);
+      window.removeEventListener("online", handleOnline);
+    };
   }, []);
 
   useEffect(() => {
@@ -213,7 +303,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
   }, [db, hydrated]);
 
-  // Push mutations to server with keepalive for reliable cross-page navigation delivery
+  // Push mutations to peers via Realtime WebSocket broadcast & persist to server
   const broadcastDbChange = async (next: AppDatabaseState) => {
     setDb(next);
     try {
@@ -221,6 +311,21 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     } catch {
       // Ignore
     }
+
+    // 1. Instant WebSocket broadcast to any active admin / ambassador windows
+    if (realtimeChannelRef.current) {
+      try {
+        realtimeChannelRef.current.send({
+          type: "broadcast",
+          event: "app_state_mutation",
+          payload: { state: next, timestamp: Date.now() },
+        });
+      } catch (err) {
+        // Channel reconnecting
+      }
+    }
+
+    // 2. Persist to server / Supabase cloud database
     try {
       await fetch("/api/sync", {
         method: "POST",
@@ -658,6 +763,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         currentAmbassador,
         currentApplication,
         isSupabaseLive: isSupabaseConfigured(),
+        isRealtimeConnected,
+        refreshLiveState: syncWithServer,
         capturedReferralCode,
         signInWithEmail,
         signOut,

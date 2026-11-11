@@ -26,6 +26,18 @@ DROP POLICY IF EXISTS "Allow public upsert of app_state" ON public.app_state;
 CREATE POLICY "Allow public upsert of app_state" ON public.app_state
   FOR ALL USING (true) WITH CHECK (true);
 
+-- Enable Supabase Realtime WebSockets replication on app_state
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_publication WHERE pubname = 'supabase_realtime') THEN
+    BEGIN
+      ALTER PUBLICATION supabase_realtime ADD TABLE public.app_state;
+    EXCEPTION WHEN duplicate_object THEN
+      NULL;
+    END;
+  END IF;
+END $$;
+
 -- ------------------------------------------------------------------------------
 -- 1. PROFILES TABLE (Linked to auth.users)
 -- ------------------------------------------------------------------------------

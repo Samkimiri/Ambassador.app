@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import {
   Award,
   Bell,
+  BookOpen,
   Clock,
   FolderKanban,
   HelpCircle,
@@ -23,6 +24,7 @@ import { LevelBadge } from "@/components/ui/status-badge";
 
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
+  { href: "/dashboard/guide", label: "Ambassador Guide", icon: BookOpen },
   { href: "/dashboard/referrals", label: "My Referrals", icon: Users },
   { href: "/dashboard/campaigns", label: "Campaigns", icon: Megaphone },
   { href: "/dashboard/resources", label: "Resource Library", icon: FolderKanban },
