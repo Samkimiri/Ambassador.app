@@ -211,3 +211,54 @@ export function isSelfReferral(
   return sameEmail || samePhone;
 }
 
+/**
+ * Normalizes user-submitted social media handles into valid, clickable URLs
+ */
+export function getSocialLinkUrl(
+  platform: "instagram" | "linkedin" | "tiktok" | "twitter" | "portfolio",
+  value?: string
+): string | null {
+  if (!value || typeof value !== "string") return null;
+  const clean = value.trim();
+  if (!clean) return null;
+
+  if (clean.startsWith("http://") || clean.startsWith("https://")) {
+    return clean;
+  }
+
+  const withoutAt = clean.replace(/^@/, "");
+
+  switch (platform) {
+    case "instagram":
+      return `https://instagram.com/${withoutAt}`;
+    case "linkedin":
+      if (clean.includes("linkedin.com")) return `https://${clean}`;
+      if (clean.startsWith("in/")) return `https://linkedin.com/${clean}`;
+      return `https://linkedin.com/in/${withoutAt}`;
+    case "tiktok":
+      return `https://tiktok.com/@${withoutAt}`;
+    case "twitter":
+      return `https://x.com/${withoutAt}`;
+    case "portfolio":
+      return `https://${clean}`;
+    default:
+      return clean;
+  }
+}
+
+/**
+ * Generates official verifiable SCDS Ambassador Credential ID
+ * Format: SCDS-AMB-2026-XXXX (e.g. SCDS-AMB-2026-9284)
+ */
+export function generateCredentialId(seed?: string): string {
+  const numPart = seed
+    ? Math.abs(
+        seed.split("").reduce((acc, char) => (acc << 5) - acc + char.charCodeAt(0), 0)
+      )
+        .toString()
+        .slice(-4)
+        .padStart(4, "7")
+    : Math.floor(1000 + Math.random() * 9000).toString();
+  return `SCDS-AMB-2026-${numPart}`;
+}
+

@@ -1,5 +1,5 @@
 import { AppDatabaseState, INITIAL_DATABASE_STATE } from "@/lib/seed-data";
-import { generateReferralCode } from "@/lib/utils";
+import { generateCredentialId, generateReferralCode } from "@/lib/utils";
 import { AmbassadorProfile, Profile } from "@/types";
 
 /**
@@ -96,6 +96,11 @@ export function ensureStateConsistency(state: AppDatabaseState): AppDatabaseStat
           institution: app.institution,
           occupation: app.occupation,
           bio: `${app.occupation} representing SCDS in ${app.county}.`,
+          socialLinks: app.socialLinks,
+          promotionStrategy: app.promotionStrategy,
+          targetAudience: app.targetAudience,
+          credentialId: generateCredentialId(app.id),
+          codeOfConductAgreed: true,
           isActive: true,
           clickCount: 0,
           badgeIds: [],
@@ -104,6 +109,18 @@ export function ensureStateConsistency(state: AppDatabaseState): AppDatabaseStat
         ambassadors.unshift(newAmb);
       } else {
         ambassadors[ambIdx].isActive = true;
+        if (!ambassadors[ambIdx].socialLinks && app.socialLinks) {
+          ambassadors[ambIdx].socialLinks = app.socialLinks;
+        }
+        if (!ambassadors[ambIdx].promotionStrategy && app.promotionStrategy) {
+          ambassadors[ambIdx].promotionStrategy = app.promotionStrategy;
+        }
+        if (!ambassadors[ambIdx].targetAudience && app.targetAudience) {
+          ambassadors[ambIdx].targetAudience = app.targetAudience;
+        }
+        if (!ambassadors[ambIdx].credentialId) {
+          ambassadors[ambIdx].credentialId = generateCredentialId(app.id);
+        }
       }
     }
   }

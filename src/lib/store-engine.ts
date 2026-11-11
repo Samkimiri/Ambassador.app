@@ -20,6 +20,7 @@ import {
 import { AppDatabaseState, INITIAL_DATABASE_STATE } from "@/lib/seed-data";
 import {
   computeAmbassadorLevel,
+  generateCredentialId,
   generateReferralCode,
   isSelfReferral,
   isValidReferralTransition,
@@ -44,7 +45,10 @@ export function submitAmbassadorApplicationOp(
     instagram?: string;
     linkedin?: string;
     tiktok?: string;
+    twitter?: string;
     portfolio?: string;
+    promotionStrategy?: string;
+    targetAudience?: string;
     motivation: string;
     experience: string;
     acceptedTerms: boolean;
@@ -87,8 +91,11 @@ export function submitAmbassadorApplicationOp(
       instagram: input.instagram?.trim() || undefined,
       linkedin: input.linkedin?.trim() || undefined,
       tiktok: input.tiktok?.trim() || undefined,
+      twitter: input.twitter?.trim() || undefined,
       portfolio: input.portfolio?.trim() || undefined,
     },
+    promotionStrategy: input.promotionStrategy?.trim() || undefined,
+    targetAudience: input.targetAudience?.trim() || undefined,
     motivation: input.motivation.trim(),
     experience: input.experience.trim(),
     acceptedTerms: input.acceptedTerms,
@@ -186,7 +193,14 @@ export function reviewAmbassadorApplicationOp(
     );
 
     if (existingAmb) {
-      createdAmbassador = { ...existingAmb, isActive: true };
+      createdAmbassador = {
+        ...existingAmb,
+        isActive: true,
+        socialLinks: existingAmb.socialLinks || app.socialLinks,
+        promotionStrategy: existingAmb.promotionStrategy || app.promotionStrategy,
+        targetAudience: existingAmb.targetAudience || app.targetAudience,
+        credentialId: existingAmb.credentialId || generateCredentialId(app.id),
+      };
       updatedAmbassadors = updatedAmbassadors.map((a) =>
         a.id === existingAmb.id ? createdAmbassador! : a
       );
@@ -212,6 +226,11 @@ export function reviewAmbassadorApplicationOp(
         institution: app.institution,
         occupation: app.occupation,
         bio: `${app.occupation} representing SCDS in ${app.county}.`,
+        socialLinks: app.socialLinks,
+        promotionStrategy: app.promotionStrategy,
+        targetAudience: app.targetAudience,
+        credentialId: generateCredentialId(app.id),
+        codeOfConductAgreed: true,
         isActive: true,
         clickCount: 0,
         badgeIds: [],

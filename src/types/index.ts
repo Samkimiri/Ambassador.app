@@ -48,6 +48,14 @@ export interface Profile {
   updatedAt: string;
 }
 
+export interface AmbassadorSocialLinks {
+  instagram?: string;
+  linkedin?: string;
+  tiktok?: string;
+  twitter?: string;
+  portfolio?: string;
+}
+
 export interface AmbassadorApplication {
   id: string;
   userId: string;
@@ -57,12 +65,9 @@ export interface AmbassadorApplication {
   county: string;
   institution: string;
   occupation: string;
-  socialLinks: {
-    instagram?: string;
-    linkedin?: string;
-    tiktok?: string;
-    portfolio?: string;
-  };
+  socialLinks: AmbassadorSocialLinks;
+  promotionStrategy?: string;
+  targetAudience?: string;
   motivation: string;
   experience: string;
   acceptedTerms: boolean;
@@ -93,6 +98,11 @@ export interface AmbassadorProfile {
   institution: string;
   occupation: string;
   bio: string;
+  socialLinks?: AmbassadorSocialLinks;
+  promotionStrategy?: string;
+  targetAudience?: string;
+  credentialId?: string; // Official Verification ID e.g. SCDS-AMB-2026-9481
+  codeOfConductAgreed?: boolean;
   isActive: boolean;
   clickCount: number;
   badgeIds: string[];

@@ -22,7 +22,10 @@ export default function RegisterApplicationPage() {
   const [instagram, setInstagram] = useState("");
   const [linkedin, setLinkedin] = useState("");
   const [tiktok, setTiktok] = useState("");
+  const [twitter, setTwitter] = useState("");
   const [portfolio, setPortfolio] = useState("");
+  const [promotionStrategy, setPromotionStrategy] = useState("WhatsApp Student Groups & Status");
+  const [targetAudience, setTargetAudience] = useState("University / College Undergraduates");
   const [motivation, setMotivation] = useState("");
   const [experience, setExperience] = useState("");
   const [acceptedTerms, setAcceptedTerms] = useState(false);
@@ -44,7 +47,10 @@ export default function RegisterApplicationPage() {
       instagram,
       linkedin,
       tiktok,
+      twitter,
       portfolio,
+      promotionStrategy,
+      targetAudience,
       motivation,
       experience,
       acceptedTerms,
@@ -204,30 +210,107 @@ export default function RegisterApplicationPage() {
               </div>
             </div>
 
+            <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-4 space-y-3">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-800 block">
+                Professional Online Presence &amp; Socials (Optional but Recommended)
+              </span>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    LinkedIn Profile URL
+                  </label>
+                  <input
+                    type="text"
+                    value={linkedin}
+                    onChange={(e) => setLinkedin(e.target.value)}
+                    placeholder="https://linkedin.com/in/yourprofile"
+                    className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm focus:border-brand-600 focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Instagram Handle / Profile
+                  </label>
+                  <input
+                    type="text"
+                    value={instagram}
+                    onChange={(e) => setInstagram(e.target.value)}
+                    placeholder="@yourhandle or URL"
+                    className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm focus:border-brand-600 focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    TikTok Profile URL / Handle
+                  </label>
+                  <input
+                    type="text"
+                    value={tiktok}
+                    onChange={(e) => setTiktok(e.target.value)}
+                    placeholder="@yourtiktok"
+                    className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm focus:border-brand-600 focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    X / Twitter Profile URL
+                  </label>
+                  <input
+                    type="text"
+                    value={twitter}
+                    onChange={(e) => setTwitter(e.target.value)}
+                    placeholder="@yourhandle or https://x.com/..."
+                    className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm focus:border-brand-600 focus:outline-none"
+                  />
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Design Portfolio / Personal Website URL
+                  </label>
+                  <input
+                    type="text"
+                    value={portfolio}
+                    onChange={(e) => setPortfolio(e.target.value)}
+                    placeholder="https://yourportfolio.com or Behance / GitHub"
+                    className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm focus:border-brand-600 focus:outline-none"
+                  />
+                </div>
+              </div>
+            </div>
+
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Instagram / TikTok Profile URL (Optional)
+                  Primary Outreach &amp; Promotion Strategy *
                 </label>
-                <input
-                  type="text"
-                  value={instagram}
-                  onChange={(e) => setInstagram(e.target.value)}
-                  placeholder="https://instagram.com/yourhandle"
-                  className="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm focus:border-brand-600 focus:outline-none"
-                />
+                <select
+                  value={promotionStrategy}
+                  onChange={(e) => setPromotionStrategy(e.target.value)}
+                  className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm focus:border-brand-600 focus:outline-none"
+                >
+                  <option value="WhatsApp Student Groups & Status">WhatsApp Student Groups &amp; Status</option>
+                  <option value="Campus & Class Peer Outreach">Campus &amp; Class Peer Outreach</option>
+                  <option value="Instagram Reels & TikTok Content">Instagram Reels &amp; TikTok Content</option>
+                  <option value="One-on-One Direct Referrals">One-on-One Direct Referrals</option>
+                  <option value="Tech & Design Community Meetups">Tech &amp; Design Community Meetups</option>
+                  <option value="Multi-Channel Hybrid Outreach">Multi-Channel Hybrid Outreach</option>
+                </select>
               </div>
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Portfolio or LinkedIn URL (Optional)
+                  Target Student Audience *
                 </label>
-                <input
-                  type="text"
-                  value={portfolio}
-                  onChange={(e) => setPortfolio(e.target.value)}
-                  placeholder="https://linkedin.com/in/yourprofile"
-                  className="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm focus:border-brand-600 focus:outline-none"
-                />
+                <select
+                  value={targetAudience}
+                  onChange={(e) => setTargetAudience(e.target.value)}
+                  className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm focus:border-brand-600 focus:outline-none"
+                >
+                  <option value="University / College Undergraduates">University / College Undergraduates</option>
+                  <option value="High School Leavers & Pre-University">High School Leavers &amp; Pre-University</option>
+                  <option value="Creative Freelancers & Junior Designers">Creative Freelancers &amp; Junior Designers</option>
+                  <option value="Career Switchers & Working Professionals">Career Switchers &amp; Working Professionals</option>
+                  <option value="Tech, AI & Coding Enthusiasts">Tech, AI &amp; Coding Enthusiasts</option>
+                </select>
               </div>
             </div>
 

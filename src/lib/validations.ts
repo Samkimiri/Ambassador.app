@@ -32,7 +32,10 @@ export const ambassadorApplicationSchema = z.object({
   instagram: z.string().optional().default(""),
   linkedin: z.string().optional().default(""),
   tiktok: z.string().optional().default(""),
+  twitter: z.string().optional().default(""),
   portfolio: z.string().optional().default(""),
+  promotionStrategy: z.string().optional().default(""),
+  targetAudience: z.string().optional().default(""),
   motivation: z
     .string()
     .min(30, "Please share at least 30 characters on why you want to represent SCDS.")

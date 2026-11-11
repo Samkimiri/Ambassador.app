@@ -7,6 +7,7 @@ import { generateReferralCode } from "@/lib/utils";
 import {
   AmbassadorApplication,
   AmbassadorProfile,
+  AmbassadorSocialLinks,
   Announcement,
   Campaign,
   Course,
@@ -108,6 +109,9 @@ interface AppContextValue {
     institution: string;
     bio: string;
     payoutPhone: string;
+    socialLinks?: AmbassadorSocialLinks;
+    promotionStrategy?: string;
+    targetAudience?: string;
   }) => void;
   submitSupportRequest: (input: {
     subject: string;
@@ -116,6 +120,7 @@ interface AppContextValue {
   }) => void;
   respondSupportRequest: (id: string, response: string, status: SupportRequest["status"]) => void;
   markNotificationsRead: () => void;
+  broadcastDbChange: (next: AppDatabaseState) => Promise<void>;
 }
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -304,6 +309,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       window.removeEventListener("focus", handleFocus);
       window.removeEventListener("online", handleOnline);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -795,17 +801,20 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }));
   };
 
-  const updateAmbassadorProfile = (input: {
+  const updateAmbassadorProfile = async (input: {
     phone: string;
     county: string;
     institution: string;
     bio: string;
     payoutPhone: string;
+    socialLinks?: AmbassadorSocialLinks;
+    promotionStrategy?: string;
+    targetAudience?: string;
   }) => {
     if (!currentAmbassador) return;
-    setDb((prev) => ({
-      ...prev,
-      ambassadors: prev.ambassadors.map((a) =>
+    const nextDb = {
+      ...db,
+      ambassadors: db.ambassadors.map((a) =>
         a.id === currentAmbassador.id
           ? {
               ...a,
@@ -814,10 +823,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
               institution: input.institution,
               bio: input.bio,
               payoutPhone: input.payoutPhone,
+              socialLinks: input.socialLinks || a.socialLinks,
+              promotionStrategy: input.promotionStrategy || a.promotionStrategy,
+              targetAudience: input.targetAudience || a.targetAudience,
             }
           : a
       ),
-    }));
+    };
+    await broadcastDbChange(nextDb);
   };
 
   const submitSupportRequest = (input: {
@@ -912,6 +925,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         submitSupportRequest,
         respondSupportRequest,
         markNotificationsRead,
+        broadcastDbChange,
       }}
     >
       {children}
