@@ -289,6 +289,12 @@ export function ensureStateConsistency(state: AppDatabaseState): AppDatabaseStat
     (n) => !SEEDED_DEMO_USER_IDS.has(n.userId)
   );
 
+  // Automatically purge expired items from trash (items older than 48 hours / 2 days)
+  const currentTime = Date.now();
+  const cleanTrash = (state.trash || []).filter(
+    (t) => new Date(t.expiresAt).getTime() > currentTime
+  );
+
   return {
     ...state,
     profiles,
@@ -296,6 +302,7 @@ export function ensureStateConsistency(state: AppDatabaseState): AppDatabaseStat
     applications,
     referrals: cleanReferrals,
     notifications: cleanNotifications,
+    trash: cleanTrash,
     deletedApplicationIds: Array.from(deletedAppSet),
     deletedUserIds: Array.from(deletedUserSet),
   };

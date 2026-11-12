@@ -1,12 +1,12 @@
 "use client";
 
 import React, { useState } from "react";
-import { Plus } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { useApp } from "@/context/app-context";
 import { formatKes } from "@/lib/utils";
 
 export default function AdminCoursesPage() {
-  const { db, saveCourse } = useApp();
+  const { db, saveCourse, deleteCourse } = useApp();
   const [title, setTitle] = useState("");
   const [slug, setSlug] = useState("");
   const [shortCode, setShortCode] = useState("");
@@ -17,6 +17,27 @@ export default function AdminCoursesPage() {
   const [pointsReward, setPointsReward] = useState("250");
   const [description, setDescription] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<string | null>(null);
+
+  const handleDeleteCourse = async (courseId: string, courseTitle: string) => {
+    if (deleteConfirmId !== courseId) {
+      setDeleteConfirmId(courseId);
+      setTimeout(() => {
+        setDeleteConfirmId((curr) => (curr === courseId ? null : curr));
+      }, 5000);
+      return;
+    }
+
+    try {
+      await deleteCourse(courseId, true);
+      setDeleteConfirmId(null);
+      setFeedback(`Course "${courseTitle}" moved to Trash (48-hour recovery window).`);
+      setTimeout(() => setFeedback(null), 4000);
+    } catch (err) {
+      setFeedback(`Failed to delete course: ${err instanceof Error ? err.message : "Error"}`);
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -59,6 +80,19 @@ export default function AdminCoursesPage() {
           programs at any time.
         </p>
       </div>
+
+      {feedback && (
+        <div className="rounded-xl border border-brand-200 bg-brand-50 p-3.5 text-xs font-semibold text-brand-900 flex items-center justify-between shadow-xs">
+          <span>{feedback}</span>
+          <button
+            type="button"
+            onClick={() => setFeedback(null)}
+            className="text-brand-600 hover:text-brand-900 text-xs font-bold"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-12">
         <form
@@ -218,24 +252,39 @@ export default function AdminCoursesPage() {
                     {c.commissionRatePct}% · {c.pointsReward} pts
                   </td>
                   <td className="py-3.5 px-4">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setEditingId(c.id);
-                        setTitle(c.title);
-                        setSlug(c.slug);
-                        setShortCode(c.shortCode);
-                        setCategory(c.category);
-                        setDuration(c.duration);
-                        setPublishedFeeKes(String(c.publishedFeeKes));
-                        setCommissionRatePct(String(c.commissionRatePct));
-                        setPointsReward(String(c.pointsReward));
-                        setDescription(c.description);
-                      }}
-                      className="rounded-lg border border-slate-300 px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-                    >
-                      Edit
-                    </button>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingId(c.id);
+                          setTitle(c.title);
+                          setSlug(c.slug);
+                          setShortCode(c.shortCode);
+                          setCategory(c.category);
+                          setDuration(c.duration);
+                          setPublishedFeeKes(String(c.publishedFeeKes));
+                          setCommissionRatePct(String(c.commissionRatePct));
+                          setPointsReward(String(c.pointsReward));
+                          setDescription(c.description);
+                        }}
+                        className="rounded-lg border border-slate-300 px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteCourse(c.id, c.title)}
+                        title={deleteConfirmId === c.id ? "Click again to confirm delete to trash" : "Move course to trash"}
+                        className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-semibold transition ${
+                          deleteConfirmId === c.id
+                            ? "bg-rose-700 text-white animate-pulse"
+                            : "border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100"
+                        }`}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                        <span>{deleteConfirmId === c.id ? "Confirm?" : "Delete"}</span>
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}

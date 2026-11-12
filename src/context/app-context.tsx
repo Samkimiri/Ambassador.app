@@ -17,14 +17,28 @@ import {
   ReferralStatus,
   RewardRuleConfig,
   SupportRequest,
+  TrashEntityType,
+  TrashItem,
 } from "@/types";
 import {
   blockAmbassadorAccountOp,
   deleteAmbassadorAccountOp,
   deleteAmbassadorApplicationOp,
+  deleteAnnouncementOp,
+  deleteCampaignOp,
+  deleteCourseOp,
+  deleteEnrolmentOp,
+  deleteMarketingAssetOp,
+  deletePayoutRequestOp,
+  deletePermanentlyFromTrashOp,
+  deleteReferralOp,
+  emptyTrashOp,
+  moveToTrashOp,
   processPayoutRequestOp,
+  purgeExpiredTrashOp,
   recordReferralClickOp,
   requestPayoutOp,
+  restoreFromTrashOp,
   reviewAmbassadorApplicationOp,
   submitAmbassadorApplicationOp,
   submitLearnerEnquiryOp,
@@ -129,6 +143,24 @@ interface AppContextValue {
   respondSupportRequest: (id: string, response: string, status: SupportRequest["status"]) => void;
   markNotificationsRead: () => void;
   broadcastDbChange: (next: AppDatabaseState) => Promise<void>;
+  // Trash & Professional Data Management Platform (48-Hour Recovery Window)
+  moveToTrash: (
+    entityType: TrashEntityType,
+    entityId: string,
+    title?: string,
+    subtitle?: string
+  ) => Promise<void>;
+  restoreFromTrash: (trashId: string) => Promise<void>;
+  deletePermanentlyFromTrash: (trashId: string) => Promise<void>;
+  emptyTrash: (entityType?: TrashEntityType) => Promise<void>;
+  purgeExpiredTrash: () => Promise<void>;
+  deleteCourse: (courseId: string, moveToTrash?: boolean) => Promise<void>;
+  deleteCampaign: (campaignId: string, moveToTrash?: boolean) => Promise<void>;
+  deleteReferral: (referralId: string, moveToTrash?: boolean) => Promise<void>;
+  deleteEnrolment: (enrolmentId: string, moveToTrash?: boolean) => Promise<void>;
+  deleteMarketingAsset: (assetId: string, moveToTrash?: boolean) => Promise<void>;
+  deleteAnnouncement: (announcementId: string, moveToTrash?: boolean) => Promise<void>;
+  deletePayoutRequest: (payoutRequestId: string, moveToTrash?: boolean) => Promise<void>;
 }
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -226,6 +258,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         }
       }
 
+      const trashMap = new Map((serverDb.trash || []).map((t) => [t.id, t]));
+      for (const localTrash of prev.trash || []) {
+        if (!trashMap.has(localTrash.id)) {
+          trashMap.set(localTrash.id, localTrash);
+        }
+      }
+
       const mergedState: AppDatabaseState = {
         ...serverDb,
         applications: Array.from(appMap.values()),
@@ -233,6 +272,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         ambassadors: Array.from(ambMap.values()),
         referrals: Array.from(refMap.values()),
         payoutRequests: Array.from(payoutMap.values()),
+        trash: Array.from(trashMap.values()),
         deletedApplicationIds: Array.from(deletedAppSet),
         deletedUserIds: Array.from(deletedUserSet),
       };
@@ -1011,6 +1051,106 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }));
   };
 
+  // Trash & Professional Data Management Actions (48-Hour Recovery Window)
+  const moveToTrash = async (
+    entityType: TrashEntityType,
+    entityId: string,
+    title?: string,
+    subtitle?: string
+  ) => {
+    if (!currentUser || currentUser.role !== "super_admin") {
+      throw new Error("Unauthorized: Only Super Administrators can move items to trash.");
+    }
+    const { nextState } = moveToTrashOp(db, {
+      actor: currentUser,
+      entityType,
+      entityId,
+      title,
+      subtitle,
+    });
+    await broadcastDbChange(nextState);
+  };
+
+  const restoreFromTrash = async (trashId: string) => {
+    if (!currentUser || currentUser.role !== "super_admin") {
+      throw new Error("Unauthorized: Only Super Administrators can restore items from trash.");
+    }
+    const { nextState } = restoreFromTrashOp(db, {
+      actor: currentUser,
+      trashId,
+    });
+    await broadcastDbChange(nextState);
+  };
+
+  const deletePermanentlyFromTrash = async (trashId: string) => {
+    if (!currentUser || currentUser.role !== "super_admin") {
+      throw new Error("Unauthorized: Only Super Administrators can permanently delete items from trash.");
+    }
+    const { nextState } = deletePermanentlyFromTrashOp(db, {
+      actor: currentUser,
+      trashId,
+    });
+    await broadcastDbChange(nextState);
+  };
+
+  const emptyTrash = async (entityType?: TrashEntityType) => {
+    if (!currentUser || currentUser.role !== "super_admin") {
+      throw new Error("Unauthorized: Only Super Administrators can empty trash.");
+    }
+    const { nextState } = emptyTrashOp(db, {
+      actor: currentUser,
+      entityType,
+    });
+    await broadcastDbChange(nextState);
+  };
+
+  const purgeExpiredTrash = async () => {
+    const { nextState } = purgeExpiredTrashOp(db);
+    await broadcastDbChange(nextState);
+  };
+
+  const deleteCourse = async (courseId: string, moveToTrash = true) => {
+    if (!currentUser || currentUser.role !== "super_admin") throw new Error("Unauthorized");
+    const nextDb = deleteCourseOp(db, { actor: currentUser, courseId, moveToTrash });
+    await broadcastDbChange(nextDb);
+  };
+
+  const deleteCampaign = async (campaignId: string, moveToTrash = true) => {
+    if (!currentUser || currentUser.role !== "super_admin") throw new Error("Unauthorized");
+    const nextDb = deleteCampaignOp(db, { actor: currentUser, campaignId, moveToTrash });
+    await broadcastDbChange(nextDb);
+  };
+
+  const deleteReferral = async (referralId: string, moveToTrash = true) => {
+    if (!currentUser || currentUser.role !== "super_admin") throw new Error("Unauthorized");
+    const nextDb = deleteReferralOp(db, { actor: currentUser, referralId, moveToTrash });
+    await broadcastDbChange(nextDb);
+  };
+
+  const deleteEnrolment = async (enrolmentId: string, moveToTrash = true) => {
+    if (!currentUser || currentUser.role !== "super_admin") throw new Error("Unauthorized");
+    const nextDb = deleteEnrolmentOp(db, { actor: currentUser, enrolmentId, moveToTrash });
+    await broadcastDbChange(nextDb);
+  };
+
+  const deleteMarketingAsset = async (assetId: string, moveToTrash = true) => {
+    if (!currentUser || currentUser.role !== "super_admin") throw new Error("Unauthorized");
+    const nextDb = deleteMarketingAssetOp(db, { actor: currentUser, assetId, moveToTrash });
+    await broadcastDbChange(nextDb);
+  };
+
+  const deleteAnnouncement = async (announcementId: string, moveToTrash = true) => {
+    if (!currentUser || currentUser.role !== "super_admin") throw new Error("Unauthorized");
+    const nextDb = deleteAnnouncementOp(db, { actor: currentUser, announcementId, moveToTrash });
+    await broadcastDbChange(nextDb);
+  };
+
+  const deletePayoutRequest = async (payoutRequestId: string, moveToTrash = true) => {
+    if (!currentUser || currentUser.role !== "super_admin") throw new Error("Unauthorized");
+    const nextDb = deletePayoutRequestOp(db, { actor: currentUser, payoutRequestId, moveToTrash });
+    await broadcastDbChange(nextDb);
+  };
+
   return (
     <AppContext.Provider
       value={{
@@ -1048,6 +1188,18 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         respondSupportRequest,
         markNotificationsRead,
         broadcastDbChange,
+        moveToTrash,
+        restoreFromTrash,
+        deletePermanentlyFromTrash,
+        emptyTrash,
+        purgeExpiredTrash,
+        deleteCourse,
+        deleteCampaign,
+        deleteReferral,
+        deleteEnrolment,
+        deleteMarketingAsset,
+        deleteAnnouncement,
+        deletePayoutRequest,
       }}
     >
       {children}

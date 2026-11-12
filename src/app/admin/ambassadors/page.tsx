@@ -38,6 +38,7 @@ export default function AdminAmbassadorsDirectoryPage() {
     blockAmbassadorAccount,
     unblockAmbassadorAccount,
     deleteAmbassadorAccount,
+    moveToTrash,
     broadcastDbChange,
   } = useApp();
   const [search, setSearch] = useState("");
@@ -123,13 +124,18 @@ export default function AdminAmbassadorsDirectoryPage() {
     }
 
     try {
-      await deleteAmbassadorAccount(amb.id);
+      await moveToTrash(
+        "ambassador",
+        amb.id,
+        `${amb.fullName} (${amb.referralCode})`,
+        `${amb.email} • Tier: ${amb.level} • KES ${amb.totalCommissionKes.toLocaleString()} earned`
+      );
       setDeleteConfirmId(null);
       setSelectedAmbassador(null);
-      setFeedback(`Ambassador ${amb.fullName} (${amb.email}) was permanently deleted from the database.`);
+      setFeedback(`Ambassador ${amb.fullName} (${amb.email}) moved to Trash (retained for 48 hours with restore/purge options).`);
       setTimeout(() => setFeedback(null), 5000);
     } catch (err) {
-      setFeedback(`Failed to delete account: ${err instanceof Error ? err.message : "Error"}`);
+      setFeedback(`Failed to move account to Trash: ${err instanceof Error ? err.message : "Error"}`);
     }
   };
 

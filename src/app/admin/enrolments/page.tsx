@@ -1,12 +1,12 @@
 "use client";
 
 import React, { useState } from "react";
-import { CheckCircle2, FileCheck2 } from "lucide-react";
+import { CheckCircle2, FileCheck2, Trash2 } from "lucide-react";
 import { useApp } from "@/context/app-context";
 import { formatDate, formatKes } from "@/lib/utils";
 
 export default function AdminEnrolmentsPage() {
-  const { db, verifyEnrolment } = useApp();
+  const { db, verifyEnrolment, deleteEnrolment } = useApp();
   const [selectedRefId, setSelectedRefId] = useState(
     db.referrals.find((r) => r.status !== "payment_verified")?.id || ""
   );
@@ -17,6 +17,32 @@ export default function AdminEnrolmentsPage() {
     type: "success" | "error";
     text: string;
   } | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+
+  const handleDeleteEnrolment = async (enrolmentId: string, learnerName: string) => {
+    if (deleteConfirmId !== enrolmentId) {
+      setDeleteConfirmId(enrolmentId);
+      setTimeout(() => {
+        setDeleteConfirmId((curr) => (curr === enrolmentId ? null : curr));
+      }, 5000);
+      return;
+    }
+
+    try {
+      await deleteEnrolment(enrolmentId, true);
+      setDeleteConfirmId(null);
+      setFeedback({
+        type: "success",
+        text: `Enrolment for ${learnerName} moved to Trash (48-hour recovery window).`,
+      });
+      setTimeout(() => setFeedback(null), 4000);
+    } catch (err) {
+      setFeedback({
+        type: "error",
+        text: err instanceof Error ? err.message : "Failed to delete enrolment.",
+      });
+    }
+  };
 
   const unverifiedReferrals = db.referrals.filter(
     (r) =>
@@ -204,23 +230,39 @@ export default function AdminEnrolmentsPage() {
                       </div>
                     </td>
                     <td className="py-3 px-3">
-                      {enr.verificationStatus === "verified" ? (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-700">
-                          <CheckCircle2 className="h-3 w-3" /> VERIFIED
-                        </span>
-                      ) : (
+                      <div className="flex items-center gap-2">
+                        {enr.verificationStatus === "verified" ? (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-700">
+                            <CheckCircle2 className="h-3 w-3" /> VERIFIED
+                          </span>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedRefId(enr.referralId);
+                              setPaymentReference(enr.paymentReference);
+                              setAmountPaidKes(String(enr.amountPaidKes));
+                            }}
+                            className="rounded-lg bg-amber-50 border border-amber-300 px-2.5 py-1 text-[11px] font-semibold text-amber-900 hover:bg-amber-100"
+                          >
+                            Select to Verify →
+                          </button>
+                        )}
+
                         <button
                           type="button"
-                          onClick={() => {
-                            setSelectedRefId(enr.referralId);
-                            setPaymentReference(enr.paymentReference);
-                            setAmountPaidKes(String(enr.amountPaidKes));
-                          }}
-                          className="rounded-lg bg-amber-50 border border-amber-300 px-2.5 py-1 text-[11px] font-semibold text-amber-900 hover:bg-amber-100"
+                          onClick={() => handleDeleteEnrolment(enr.id, enr.learnerName)}
+                          title={deleteConfirmId === enr.id ? "Click again to confirm delete to trash" : "Move enrolment to trash"}
+                          className={`inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-semibold transition ${
+                            deleteConfirmId === enr.id
+                              ? "bg-rose-700 text-white animate-pulse"
+                              : "border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100"
+                          }`}
                         >
-                          Select to Verify →
+                          <Trash2 className="h-3 w-3" />
+                          <span>{deleteConfirmId === enr.id ? "Confirm?" : "Delete"}</span>
                         </button>
-                      )}
+                      </div>
                     </td>
                   </tr>
                 ))}

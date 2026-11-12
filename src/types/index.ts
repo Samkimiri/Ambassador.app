@@ -373,3 +373,26 @@ export interface AuditLog {
   createdAt: string;
 }
 
+export type TrashEntityType =
+  | "application"
+  | "ambassador"
+  | "referral"
+  | "enrolment"
+  | "course"
+  | "campaign"
+  | "payout_request"
+  | "marketing_asset"
+  | "announcement";
+
+export interface TrashItem {
+  id: string; // Unique trash record ID e.g. "trash-1731448800000-xyz"
+  entityType: TrashEntityType;
+  entityId: string; // Original ID of the entity
+  title: string; // Display title, e.g. "Jane Doe (jane@gmail.com)" or "Adobe Photoshop Masterclass"
+  subtitle?: string; // Sub-details, e.g. "Ambassador Account • Nairobi" or "Ref: QK94PL88WX • KES 2,500"
+  deletedBy: string; // Name / email of the admin who moved it to trash
+  deletedAt: string; // ISO timestamp
+  expiresAt: string; // ISO timestamp (48 hours = 2 days after deletedAt)
+  payload: any; // Full entity data serialized for restoration
+}
+

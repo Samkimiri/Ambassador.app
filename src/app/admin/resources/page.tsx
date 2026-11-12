@@ -1,13 +1,13 @@
 "use client";
 
 import React, { useState } from "react";
-import { Plus } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { useApp } from "@/context/app-context";
 import { AssetCategory } from "@/types";
 import { formatDate } from "@/lib/utils";
 
 export default function AdminResourcesPage() {
-  const { db, saveMarketingAsset } = useApp();
+  const { db, saveMarketingAsset, deleteMarketingAsset } = useApp();
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState<AssetCategory>("Course Posters");
   const [description, setDescription] = useState("");
@@ -17,6 +17,27 @@ export default function AdminResourcesPage() {
   const [usageInstructions, setUsageInstructions] = useState(
     "Share on WhatsApp Status, Instagram, or campus groups."
   );
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<string | null>(null);
+
+  const handleDeleteAsset = async (assetId: string, assetTitle: string) => {
+    if (deleteConfirmId !== assetId) {
+      setDeleteConfirmId(assetId);
+      setTimeout(() => {
+        setDeleteConfirmId((curr) => (curr === assetId ? null : curr));
+      }, 5000);
+      return;
+    }
+
+    try {
+      await deleteMarketingAsset(assetId, true);
+      setDeleteConfirmId(null);
+      setFeedback(`Marketing resource "${assetTitle}" moved to Trash (48-hour recovery window).`);
+      setTimeout(() => setFeedback(null), 4000);
+    } catch (err) {
+      setFeedback(`Failed to delete resource: ${err instanceof Error ? err.message : "Error"}`);
+    }
+  };
 
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,6 +65,19 @@ export default function AdminResourcesPage() {
           Marketing Resource Library Management ({db.marketingAssets.length})
         </h1>
       </div>
+
+      {feedback && (
+        <div className="rounded-xl border border-brand-200 bg-brand-50 p-3.5 text-xs font-semibold text-brand-900 flex items-center justify-between shadow-xs">
+          <span>{feedback}</span>
+          <button
+            type="button"
+            onClick={() => setFeedback(null)}
+            className="text-brand-600 hover:text-brand-900 text-xs font-bold"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-12">
         <form
@@ -149,9 +183,24 @@ export default function AdminResourcesPage() {
                 <span className="rounded-full bg-brand-50 border border-brand-200 px-2.5 py-0.5 font-semibold text-brand-700">
                   {a.category}
                 </span>
-                <span className="text-slate-400">
-                  {formatDate(a.createdAt)}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-slate-400">
+                    {formatDate(a.createdAt)}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteAsset(a.id, a.title)}
+                    title={deleteConfirmId === a.id ? "Click again to confirm delete to trash" : "Move resource to trash"}
+                    className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-semibold transition ${
+                      deleteConfirmId === a.id
+                        ? "bg-rose-700 text-white animate-pulse"
+                        : "border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100"
+                    }`}
+                  >
+                    <Trash2 className="h-3 w-3" />
+                    <span>{deleteConfirmId === a.id ? "Confirm?" : "Delete"}</span>
+                  </button>
+                </div>
               </div>
               <h3 className="text-sm font-bold text-slate-900">{a.title}</h3>
               <p className="text-slate-600">{a.description}</p>

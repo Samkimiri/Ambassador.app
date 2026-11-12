@@ -104,6 +104,7 @@ export default function AdminApplicationsPage() {
     db,
     reviewApplication,
     deleteApplication,
+    moveToTrash,
     isRealtimeConnected,
     refreshLiveState,
   } = useApp();
@@ -159,13 +160,19 @@ export default function AdminApplicationsPage() {
     }
 
     try {
-      await deleteApplication(id);
+      const app = db.applications.find((a) => a.id === id);
+      await moveToTrash(
+        "application",
+        id,
+        name,
+        `${app?.institution || "SCDS Applicant"} · ${app?.county || "Kenya"}`
+      );
       setDeleteConfirmId(null);
-      setFeedback(`Application for ${name} permanently deleted.`);
-      setTimeout(() => setFeedback(null), 4000);
+      setFeedback(`Application for ${name} moved to Trash (retained for 48 hours with restore/purge options).`);
+      setTimeout(() => setFeedback(null), 5000);
     } catch (err) {
       setFeedback(
-        `Failed to delete application: ${
+        `Failed to move application to Trash: ${
           err instanceof Error ? err.message : "Error"
         }`
       );

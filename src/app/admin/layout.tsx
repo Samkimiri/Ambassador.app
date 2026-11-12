@@ -16,6 +16,7 @@ import {
   Settings,
   ShieldAlert,
   ShieldCheck,
+  Trash2,
   Users,
   Wallet,
 } from "lucide-react";
@@ -34,6 +35,7 @@ const ADMIN_NAV = [
   { href: "/admin/payouts", label: "Payout Requests", icon: Wallet },
   { href: "/admin/resources", label: "Marketing Assets", icon: FolderKanban },
   { href: "/admin/announcements", label: "Announcements", icon: Megaphone },
+  { href: "/admin/trash", label: "Trash Platform", icon: Trash2 },
   { href: "/admin/reports", label: "Reports & CSV", icon: Download },
   { href: "/admin/settings", label: "Program Settings", icon: Settings },
   { href: "/admin/audit-logs", label: "Audit Logs", icon: ShieldCheck },
@@ -136,6 +138,11 @@ export default function AdminLayout({
                   {item.href === "/admin/payouts" && pendingPayouts > 0 && (
                     <span className="rounded-full bg-gold-400 px-1.5 py-0.2 text-[10px] font-bold text-navy-900">
                       {pendingPayouts}
+                    </span>
+                  )}
+                  {item.href === "/admin/trash" && (db.trash?.length || 0) > 0 && (
+                    <span className="rounded-full bg-rose-500 px-1.5 py-0.2 text-[10px] font-bold text-white">
+                      {db.trash?.length}
                     </span>
                   )}
                 </Link>

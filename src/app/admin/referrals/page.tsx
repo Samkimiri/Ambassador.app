@@ -1,18 +1,45 @@
 "use client";
 
 import React, { useState } from "react";
+import { Trash2 } from "lucide-react";
 import { useApp } from "@/context/app-context";
 import { ALLOWED_REFERRAL_TRANSITIONS, formatDate } from "@/lib/utils";
 import { ReferralStatusBadge } from "@/components/ui/status-badge";
 import { ReferralStatus } from "@/types";
 
 export default function AdminReferralsPage() {
-  const { db, updateReferralStatus, verifyEnrolment } = useApp();
+  const { db, updateReferralStatus, verifyEnrolment, deleteReferral } = useApp();
   const [feedback, setFeedback] = useState<{
     type: "success" | "error";
     text: string;
   } | null>(null);
   const [mpesaRefMap, setMpesaRefMap] = useState<Record<string, string>>({});
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+
+  const handleDeleteReferral = async (referralId: string, learnerName: string) => {
+    if (deleteConfirmId !== referralId) {
+      setDeleteConfirmId(referralId);
+      setTimeout(() => {
+        setDeleteConfirmId((curr) => (curr === referralId ? null : curr));
+      }, 5000);
+      return;
+    }
+
+    try {
+      await deleteReferral(referralId, true);
+      setDeleteConfirmId(null);
+      setFeedback({
+        type: "success",
+        text: `Referral for ${learnerName} moved to Trash (48-hour recovery window).`,
+      });
+      setTimeout(() => setFeedback(null), 4000);
+    } catch (err) {
+      setFeedback({
+        type: "error",
+        text: err instanceof Error ? err.message : "Failed to delete referral.",
+      });
+    }
+  };
 
   const handleStatusChange = (referralId: string, newStatus: ReferralStatus) => {
     setFeedback(null);
@@ -81,6 +108,7 @@ export default function AdminReferralsPage() {
                 <th className="py-3.5 px-4">Attributed Ambassador</th>
                 <th className="py-3.5 px-4">Current Status</th>
                 <th className="py-3.5 px-4">Transition / Verify Payment</th>
+                <th className="py-3.5 px-4 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -150,6 +178,21 @@ export default function AdminReferralsPage() {
                           ))}
                         </select>
                       </div>
+                    </td>
+                    <td className="py-3.5 px-4 text-right">
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteReferral(ref.id, ref.learnerName)}
+                        title={deleteConfirmId === ref.id ? "Click again to confirm delete to trash" : "Move referral to trash"}
+                        className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition ${
+                          deleteConfirmId === ref.id
+                            ? "bg-rose-700 text-white animate-pulse"
+                            : "border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100"
+                        }`}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                        <span>{deleteConfirmId === ref.id ? "Confirm?" : "Delete"}</span>
+                      </button>
                     </td>
                   </tr>
                 );

@@ -1,11 +1,11 @@
 "use client";
 
 import React, { useState } from "react";
-import { Plus } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { useApp } from "@/context/app-context";
 
 export default function AdminCampaignsPage() {
-  const { db, saveCampaign } = useApp();
+  const { db, saveCampaign, deleteCampaign } = useApp();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [objective, setObjective] = useState("");
@@ -15,6 +15,27 @@ export default function AdminCampaignsPage() {
   const [bonusPoints, setBonusPoints] = useState("50");
   const [bonusComm, setBonusComm] = useState("2");
   const [guidelines, setGuidelines] = useState("");
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<string | null>(null);
+
+  const handleDeleteCampaign = async (campaignId: string, campaignName: string) => {
+    if (deleteConfirmId !== campaignId) {
+      setDeleteConfirmId(campaignId);
+      setTimeout(() => {
+        setDeleteConfirmId((curr) => (curr === campaignId ? null : curr));
+      }, 5000);
+      return;
+    }
+
+    try {
+      await deleteCampaign(campaignId, true);
+      setDeleteConfirmId(null);
+      setFeedback(`Campaign "${campaignName}" moved to Trash (48-hour recovery window).`);
+      setTimeout(() => setFeedback(null), 4000);
+    } catch (err) {
+      setFeedback(`Failed to delete campaign: ${err instanceof Error ? err.message : "Error"}`);
+    }
+  };
 
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,6 +73,19 @@ export default function AdminCampaignsPage() {
           Campaign Management ({db.campaigns.length})
         </h1>
       </div>
+
+      {feedback && (
+        <div className="rounded-xl border border-brand-200 bg-brand-50 p-3.5 text-xs font-semibold text-brand-900 flex items-center justify-between shadow-xs">
+          <span>{feedback}</span>
+          <button
+            type="button"
+            onClick={() => setFeedback(null)}
+            className="text-brand-600 hover:text-brand-900 text-xs font-bold"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-12">
         <form
@@ -178,9 +212,24 @@ export default function AdminCampaignsPage() {
                 <h3 className="text-base font-bold text-slate-900">
                   {camp.name}
                 </h3>
-                <span className="rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 font-semibold text-emerald-700">
-                  {camp.status.toUpperCase()}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 font-semibold text-emerald-700">
+                    {camp.status.toUpperCase()}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteCampaign(camp.id, camp.name)}
+                    title={deleteConfirmId === camp.id ? "Click again to confirm delete to trash" : "Move campaign to trash"}
+                    className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-semibold transition ${
+                      deleteConfirmId === camp.id
+                        ? "bg-rose-700 text-white animate-pulse"
+                        : "border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100"
+                    }`}
+                  >
+                    <Trash2 className="h-3 w-3" />
+                    <span>{deleteConfirmId === camp.id ? "Confirm?" : "Delete"}</span>
+                  </button>
+                </div>
               </div>
               <p className="text-slate-600">{camp.description}</p>
               <div className="flex flex-wrap gap-3 pt-1 text-slate-500">

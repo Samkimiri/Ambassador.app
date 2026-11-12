@@ -1,17 +1,43 @@
 "use client";
 
 import React, { useState } from "react";
-import { CheckCircle2, XCircle } from "lucide-react";
+import { CheckCircle2, Trash2, XCircle } from "lucide-react";
 import { useApp } from "@/context/app-context";
 import { formatDate, formatKes } from "@/lib/utils";
 
 export default function AdminPayoutsPage() {
-  const { db, processPayout } = useApp();
+  const { db, processPayout, deletePayoutRequest } = useApp();
   const [txRefMap, setTxRefMap] = useState<Record<string, string>>({});
   const [feedback, setFeedback] = useState<{
     type: "success" | "error";
     text: string;
   } | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+
+  const handleDeletePayout = async (reqId: string, ambName: string, amount: number) => {
+    if (deleteConfirmId !== reqId) {
+      setDeleteConfirmId(reqId);
+      setTimeout(() => {
+        setDeleteConfirmId((curr) => (curr === reqId ? null : curr));
+      }, 5000);
+      return;
+    }
+
+    try {
+      await deletePayoutRequest(reqId, true);
+      setDeleteConfirmId(null);
+      setFeedback({
+        type: "success",
+        text: `Payout request of KES ${amount.toLocaleString()} for ${ambName} moved to Trash (48-hour recovery window).`,
+      });
+      setTimeout(() => setFeedback(null), 4000);
+    } catch (err) {
+      setFeedback({
+        type: "error",
+        text: err instanceof Error ? err.message : "Failed to delete payout request.",
+      });
+    }
+  };
 
   const handleAction = (
     payoutRequestId: string,
@@ -109,42 +135,58 @@ export default function AdminPayoutsPage() {
                     </span>
                   </td>
                   <td className="py-3.5 px-4">
-                    {req.status === "paid" ? (
-                      <span className="font-mono font-bold text-emerald-700">
-                        Paid Ref: {req.transactionReference}
-                      </span>
-                    ) : (
-                      <div className="flex flex-wrap items-center gap-2">
-                        <input
-                          type="text"
-                          placeholder="M-Pesa Code (e.g. QL20MP99)"
-                          value={txRefMap[req.id] || ""}
-                          onChange={(e) =>
-                            setTxRefMap((prev) => ({
-                              ...prev,
-                              [req.id]: e.target.value.toUpperCase(),
-                            }))
-                          }
-                          className="w-40 rounded-lg border border-slate-300 px-2.5 py-1.5 text-xs font-mono uppercase"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => handleAction(req.id, "paid")}
-                          className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700"
-                        >
-                          <CheckCircle2 className="h-3.5 w-3.5" /> Confirm Paid
-                        </button>
-                        {req.status !== "rejected" && (
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      {req.status === "paid" ? (
+                        <span className="font-mono font-bold text-emerald-700">
+                          Paid Ref: {req.transactionReference}
+                        </span>
+                      ) : (
+                        <div className="flex flex-wrap items-center gap-2">
+                          <input
+                            type="text"
+                            placeholder="M-Pesa Code (e.g. QL20MP99)"
+                            value={txRefMap[req.id] || ""}
+                            onChange={(e) =>
+                              setTxRefMap((prev) => ({
+                                ...prev,
+                                [req.id]: e.target.value.toUpperCase(),
+                              }))
+                            }
+                            className="w-40 rounded-lg border border-slate-300 px-2.5 py-1.5 text-xs font-mono uppercase"
+                          />
                           <button
                             type="button"
-                            onClick={() => handleAction(req.id, "rejected")}
-                            className="inline-flex items-center gap-1 rounded-lg border border-rose-300 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-100"
+                            onClick={() => handleAction(req.id, "paid")}
+                            className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700"
                           >
-                            <XCircle className="h-3.5 w-3.5" /> Reject
+                            <CheckCircle2 className="h-3.5 w-3.5" /> Confirm Paid
                           </button>
-                        )}
-                      </div>
-                    )}
+                          {req.status !== "rejected" && (
+                            <button
+                              type="button"
+                              onClick={() => handleAction(req.id, "rejected")}
+                              className="inline-flex items-center gap-1 rounded-lg border border-rose-300 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-100"
+                            >
+                              <XCircle className="h-3.5 w-3.5" /> Reject
+                            </button>
+                          )}
+                        </div>
+                      )}
+
+                      <button
+                        type="button"
+                        onClick={() => handleDeletePayout(req.id, req.ambassadorName, req.amountKes)}
+                        title={deleteConfirmId === req.id ? "Click again to confirm delete to trash" : "Move payout request to trash"}
+                        className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition ${
+                          deleteConfirmId === req.id
+                            ? "bg-rose-700 text-white animate-pulse"
+                            : "border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100"
+                        }`}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                        <span>{deleteConfirmId === req.id ? "Confirm?" : "Delete"}</span>
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}

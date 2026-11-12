@@ -16,6 +16,7 @@ import {
   Referral,
   RewardRuleConfig,
   SupportRequest,
+  TrashItem,
 } from "@/types";
 
 export interface AppDatabaseState {
@@ -38,6 +39,7 @@ export interface AppDatabaseState {
   auditLogs: AuditLog[];
   deletedApplicationIds?: string[];
   deletedUserIds?: string[];
+  trash?: TrashItem[];
 }
 
 export const INITIAL_REWARD_RULES: RewardRuleConfig = {
@@ -489,4 +491,5 @@ export const INITIAL_DATABASE_STATE: AppDatabaseState = {
   auditLogs: [],
   deletedApplicationIds: [],
   deletedUserIds: [],
+  trash: [],
 };

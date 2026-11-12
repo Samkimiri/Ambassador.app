@@ -1,15 +1,36 @@
 "use client";
 
 import React, { useState } from "react";
-import { Megaphone } from "lucide-react";
+import { Megaphone, Trash2 } from "lucide-react";
 import { useApp } from "@/context/app-context";
 import { formatDateTime } from "@/lib/utils";
 
 export default function AdminAnnouncementsPage() {
-  const { db, publishAnnouncement } = useApp();
+  const { db, publishAnnouncement, deleteAnnouncement } = useApp();
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [isPinned, setIsPinned] = useState(false);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<string | null>(null);
+
+  const handleDeleteAnnouncement = async (annId: string, annTitle: string) => {
+    if (deleteConfirmId !== annId) {
+      setDeleteConfirmId(annId);
+      setTimeout(() => {
+        setDeleteConfirmId((curr) => (curr === annId ? null : curr));
+      }, 5000);
+      return;
+    }
+
+    try {
+      await deleteAnnouncement(annId, true);
+      setDeleteConfirmId(null);
+      setFeedback(`Announcement "${annTitle}" moved to Trash (48-hour recovery window).`);
+      setTimeout(() => setFeedback(null), 4000);
+    } catch (err) {
+      setFeedback(`Failed to delete announcement: ${err instanceof Error ? err.message : "Error"}`);
+    }
+  };
 
   const handlePublish = (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,6 +56,19 @@ export default function AdminAnnouncementsPage() {
           Broadcast Announcements ({db.announcements.length})
         </h1>
       </div>
+
+      {feedback && (
+        <div className="rounded-xl border border-brand-200 bg-brand-50 p-3.5 text-xs font-semibold text-brand-900 flex items-center justify-between shadow-xs">
+          <span>{feedback}</span>
+          <button
+            type="button"
+            onClick={() => setFeedback(null)}
+            className="text-brand-600 hover:text-brand-900 text-xs font-bold"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-12">
         <form
@@ -97,9 +131,24 @@ export default function AdminAnnouncementsPage() {
                 <h3 className="text-sm font-bold text-slate-900">
                   {ann.title}
                 </h3>
-                <span className="text-slate-400">
-                  {formatDateTime(ann.publishedAt)}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-slate-400">
+                    {formatDateTime(ann.publishedAt)}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteAnnouncement(ann.id, ann.title)}
+                    title={deleteConfirmId === ann.id ? "Click again to confirm delete to trash" : "Move announcement to trash"}
+                    className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-semibold transition ${
+                      deleteConfirmId === ann.id
+                        ? "bg-rose-700 text-white animate-pulse"
+                        : "border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100"
+                    }`}
+                  >
+                    <Trash2 className="h-3 w-3" />
+                    <span>{deleteConfirmId === ann.id ? "Confirm?" : "Delete"}</span>
+                  </button>
+                </div>
               </div>
               <p className="text-slate-600 leading-relaxed">{ann.body}</p>
             </div>
