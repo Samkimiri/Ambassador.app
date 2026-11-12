@@ -387,7 +387,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
 
     // 3. Event-driven freshness triggers: sync when window gains focus or network reconnects
-    // (NO continuous setInterval polling needed!)
     const handleFocus = () => {
       syncWithServer();
     };
@@ -398,10 +397,17 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     window.addEventListener("focus", handleFocus);
     window.addEventListener("online", handleOnline);
 
+    // 4. Background freshness polling every 4 seconds to guarantee instant visibility
+    // for Admin & Ambassador real-time application and directory sync
+    const syncInterval = setInterval(() => {
+      syncWithServer();
+    }, 4000);
+
     return () => {
       if (realtimeChannelRef.current && supabase) {
         supabase.removeChannel(realtimeChannelRef.current);
       }
+      clearInterval(syncInterval);
       window.removeEventListener("focus", handleFocus);
       window.removeEventListener("online", handleOnline);
     };
@@ -695,13 +701,51 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const submitApplication = async (
     input: Parameters<typeof submitAmbassadorApplicationOp>[1]
   ) => {
+    // 1. Direct server persistence via dedicated API
+    let serverApp: AmbassadorApplication | null = null;
+    let serverProfile: Profile | null = null;
+    try {
+      const res = await fetch("/api/applications", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input),
+      });
+      if (res.ok) {
+        const json = await res.json();
+        serverApp = json.application || null;
+        serverProfile = json.profile || null;
+      }
+    } catch (err) {
+      console.warn("Could not submit directly to /api/applications:", err);
+    }
+
+    // 2. Client-side operation & broadcast sync
     const { nextState, application, profile } = submitAmbassadorApplicationOp(
       db,
       input
     );
-    await broadcastDbChange(nextState);
-    setCurrentUserId(profile.id);
-    return application;
+    const finalApp = serverApp || application;
+    const finalProfile = serverProfile || profile;
+
+    const mergedState: AppDatabaseState = {
+      ...nextState,
+      applications: [
+        finalApp,
+        ...nextState.applications.filter(
+          (a) => a.id !== finalApp.id && a.email.toLowerCase() !== finalApp.email.toLowerCase()
+        ),
+      ],
+      profiles: [
+        finalProfile,
+        ...nextState.profiles.filter(
+          (p) => p.id !== finalProfile.id && p.email.toLowerCase() !== finalProfile.email.toLowerCase()
+        ),
+      ],
+    };
+
+    await broadcastDbChange(mergedState);
+    setCurrentUserId(finalProfile.id);
+    return finalApp;
   };
 
   const reviewApplication = async (

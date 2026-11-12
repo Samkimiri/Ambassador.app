@@ -1,10 +1,13 @@
 import { describe, it, expect } from "vitest";
+import { NextRequest } from "next/server";
 import {
   deleteAmbassadorApplicationOp,
   reviewAmbassadorApplicationOp,
   submitAmbassadorApplicationOp,
 } from "@/lib/store-engine";
 import { ensureStateConsistency } from "@/lib/consistency";
+import { mergeDatabaseStates } from "@/lib/server-store";
+import { POST as postApplications, GET as getApplications } from "@/app/api/applications/route";
 import { INITIAL_DATABASE_STATE, AppDatabaseState } from "@/lib/seed-data";
 import { Profile } from "@/types";
 
@@ -195,5 +198,80 @@ describe("Ambassador Application Management, Deletion & Candidate Readiness Suit
     const checkedMathew = consistent.ambassadors.find((a) => a.userId === mathewAmb?.userId);
     expect(checkedMathew).toBeDefined();
     expect(checkedMathew?.isActive).toBe(true);
+  });
+
+  it("6. mergeDatabaseStates retains all new applications without overwriting other users' submissions", () => {
+    const baseState = JSON.parse(JSON.stringify(INITIAL_DATABASE_STATE)) as AppDatabaseState;
+
+    // Applicant A applies on Device 1
+    const { nextState: stateA, application: appA } = submitAmbassadorApplicationOp(baseState, {
+      fullName: "Applicant Alice",
+      email: "alice@test.ac.ke",
+      phone: "0711111111",
+      password: "Password123!",
+      county: "Nairobi",
+      institution: "UON",
+      occupation: "Student",
+      motivation: "Passionate about creative design",
+      experience: "Campus rep",
+      acceptedTerms: true,
+    });
+
+    // Applicant B applies on Device 2
+    const { nextState: stateB, application: appB } = submitAmbassadorApplicationOp(baseState, {
+      fullName: "Applicant Bob",
+      email: "bob@test.ac.ke",
+      phone: "0722222222",
+      password: "Password123!",
+      county: "Kiambu",
+      institution: "KU",
+      occupation: "Student",
+      motivation: "Passionate about web development",
+      experience: "Tech lead",
+      acceptedTerms: true,
+    });
+
+    // Server merges stateA and stateB
+    const merged = mergeDatabaseStates(stateA, stateB);
+
+    // Both applications must be retained!
+    expect(merged.applications.some((a) => a.id === appA.id)).toBe(true);
+    expect(merged.applications.some((a) => a.id === appB.id)).toBe(true);
+    expect(merged.profiles.some((p) => p.email === "alice@test.ac.ke")).toBe(true);
+    expect(merged.profiles.some((p) => p.email === "bob@test.ac.ke")).toBe(true);
+  });
+
+  it("7. POST /api/applications persists new application and GET /api/applications returns it", async () => {
+    const reqBody = {
+      fullName: "Api Applicant",
+      email: `api.applicant.${Date.now()}@test.ac.ke`,
+      phone: "0733333333",
+      password: "Password123!",
+      county: "Nakuru",
+      institution: "Egerton University",
+      occupation: "Student",
+      motivation: "I want to bring SCDS courses to fellow students in Nakuru.",
+      experience: "Organized student design workshops.",
+      acceptedTerms: true,
+    };
+
+    const postReq = new NextRequest("http://localhost:3000/api/applications", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(reqBody),
+    });
+
+    const postRes = await postApplications(postReq);
+    expect(postRes.status).toBe(201);
+    const postJson = await postRes.json();
+    expect(postJson.ok).toBe(true);
+    expect(postJson.application.email).toBe(reqBody.email.toLowerCase());
+    expect(postJson.application.status).toBe("pending");
+
+    const getRes = await getApplications();
+    expect(getRes.status).toBe(200);
+    const getJson = await getRes.json();
+    expect(getJson.ok).toBe(true);
+    expect(getJson.applications.some((a: any) => a.email === reqBody.email.toLowerCase())).toBe(true);
   });
 });

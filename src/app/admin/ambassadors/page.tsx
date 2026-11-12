@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   AlertTriangle,
   Award,
@@ -28,7 +28,7 @@ import {
   X,
 } from "lucide-react";
 import { useApp } from "@/context/app-context";
-import { formatDate, formatKes, getSocialLinkUrl } from "@/lib/utils";
+import { formatDate, formatKes, generateReferralCode, getSocialLinkUrl } from "@/lib/utils";
 import { LevelBadge } from "@/components/ui/status-badge";
 import { AmbassadorProfile } from "@/types";
 
@@ -51,11 +51,93 @@ export default function AdminAmbassadorsDirectoryPage() {
     useState<AmbassadorProfile | null>(null);
   const [blockReasonText, setBlockReasonText] = useState("");
 
+  // Combine official ambassadors directory with any approved applicants and active ambassador accounts
+  const allAmbassadors = useMemo(() => {
+    const ambMap = new Map<string, AmbassadorProfile>();
+    (db.ambassadors || []).forEach((a) => ambMap.set(a.email.toLowerCase(), a));
+
+    // Also check applications for approved ambassadors
+    const existingCodes = (db.ambassadors || []).map((a) => a.referralCode);
+    for (const app of db.applications || []) {
+      const email = app.email.toLowerCase();
+      if (app.status === "approved" && !ambMap.has(email)) {
+        const referralCode = generateReferralCode(app.fullName, existingCodes);
+        existingCodes.push(referralCode);
+        ambMap.set(email, {
+          id: `amb-${app.userId || app.id}`,
+          userId: app.userId,
+          fullName: app.fullName,
+          email: app.email,
+          phone: app.phone,
+          referralCode,
+          level: "Starter",
+          totalPoints: 0,
+          availablePoints: 0,
+          totalCommissionKes: 0,
+          availableCommissionKes: 0,
+          paidCommissionKes: 0,
+          payoutMethod: "MPESA",
+          payoutPhone: app.phone,
+          county: app.county,
+          institution: app.institution,
+          occupation: app.occupation,
+          bio: `${app.occupation} representing SCDS in ${app.county}.`,
+          socialLinks: app.socialLinks,
+          promotionStrategy: app.promotionStrategy,
+          targetAudience: app.targetAudience,
+          credentialId: `SCDS-AMB-${referralCode}`,
+          codeOfConductAgreed: true,
+          isActive: true,
+          clickCount: 0,
+          badgeIds: [],
+          createdAt: app.createdAt || new Date().toISOString(),
+        });
+      }
+    }
+
+    // Also check profiles for active ambassadors
+    for (const p of db.profiles || []) {
+      const email = p.email.toLowerCase();
+      if ((p.role === "ambassador" || p.status === "active") && p.role !== "learner" && p.role !== "super_admin" && !ambMap.has(email)) {
+        const referralCode = generateReferralCode(p.fullName, existingCodes);
+        existingCodes.push(referralCode);
+        ambMap.set(email, {
+          id: `amb-${p.id}`,
+          userId: p.id,
+          fullName: p.fullName,
+          email: p.email,
+          phone: p.phone || "",
+          referralCode,
+          level: "Starter",
+          totalPoints: 0,
+          availablePoints: 0,
+          totalCommissionKes: 0,
+          availableCommissionKes: 0,
+          paidCommissionKes: 0,
+          payoutMethod: "MPESA",
+          payoutPhone: p.phone || "",
+          county: "Kenya",
+          institution: "SCDS Ambassador Network",
+          occupation: "Ambassador",
+          bio: `Official Ambassador representing SCDS.`,
+          credentialId: `SCDS-AMB-${referralCode}`,
+          codeOfConductAgreed: true,
+          isActive: true,
+          clickCount: 0,
+          badgeIds: [],
+          createdAt: p.createdAt || new Date().toISOString(),
+        });
+      }
+    }
+
+    return Array.from(ambMap.values());
+  }, [db.ambassadors, db.applications, db.profiles]);
+
   const cleanSearch = search.includes("ref=")
     ? search.split("ref=")[1].split("&")[0].trim().toLowerCase()
     : search.trim().toLowerCase();
 
-  const filtered = db.ambassadors.filter((a) => {
+  const filtered = allAmbassadors.filter((a) => {
     const matchesSearch =
       !cleanSearch ||
       a.fullName.toLowerCase().includes(cleanSearch) ||
@@ -219,7 +301,7 @@ export default function AdminAmbassadorsDirectoryPage() {
             Ambassador Operations &amp; Intelligence
           </span>
           <h1 className="text-2xl font-extrabold text-slate-900 mt-1">
-            Approved Ambassador Directory ({db.ambassadors.length})
+            Approved Ambassador Directory ({allAmbassadors.length})
           </h1>
           <p className="text-xs text-slate-500 mt-0.5">
             Inspect full ambassador credentials, verified social links, campus reach, outreach strategies, and live earnings.
