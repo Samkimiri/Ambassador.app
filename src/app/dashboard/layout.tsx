@@ -19,7 +19,8 @@ import {
   Users,
 } from "lucide-react";
 import { useApp } from "@/context/app-context";
-import { cn, formatDate } from "@/lib/utils";
+import { cn, formatDate, generateReferralCode } from "@/lib/utils";
+import { AmbassadorProfile } from "@/types";
 import { LevelBadge } from "@/components/ui/status-badge";
 
 const NAV_ITEMS = [
@@ -85,18 +86,24 @@ export default function DashboardLayout({
     );
   }
 
-  // An ambassador is approved if their application is approved, their role is ambassador/super_admin, or active profile exists
+  // An ambassador is approved if their application is approved, their role is ambassador/super_admin, their profile status is active/approved, or an active ambassador record exists
+  const rawAppStatus = currentApplication?.status || currentUser.status || "pending";
+  const appStatus = rawAppStatus.trim().toLowerCase();
   const isApproved =
     currentUser.role === "super_admin" ||
     currentUser.role === "ambassador" ||
-    currentApplication?.status === "approved" ||
-    (currentAmbassador && currentAmbassador.isActive);
+    currentUser.status?.toLowerCase() === "active" ||
+    currentUser.status?.toLowerCase() === "approved" ||
+    currentApplication?.status?.toLowerCase() === "approved" ||
+    appStatus === "approved" ||
+    appStatus === "active" ||
+    Boolean(currentAmbassador && currentAmbassador.isActive);
 
   // If the applicant is not approved (pending, rejected, suspended), show the review status screen
   if (!isApproved) {
-    const appStatus = currentApplication?.status || currentUser.status || "pending";
-    const isPending = appStatus === "pending";
+    const isPending = appStatus === "pending" || appStatus === "under_review";
     const isRejected = appStatus === "rejected";
+    const isSuspended = appStatus === "suspended";
 
     return (
       <div className="min-h-[80vh] flex items-center justify-center px-4 py-12">
@@ -124,7 +131,9 @@ export default function DashboardLayout({
                   ? "Your Ambassador Application is Under Review"
                   : isRejected
                   ? "Ambassador Application Not Approved"
-                  : "Ambassador Privileges Restricted"}
+                  : isSuspended
+                  ? "Ambassador Account Suspended"
+                  : "Ambassador Account Under Review"}
               </h1>
             </div>
           </div>
@@ -180,14 +189,39 @@ export default function DashboardLayout({
     );
   }
 
-  const activeAmb =
+  const activeAmb: AmbassadorProfile =
     currentAmbassador ||
     db.ambassadors.find(
       (a) =>
-        a.userId === currentUser.id ||
+        (currentUser.id && a.userId === currentUser.id) ||
         a.email.toLowerCase() === currentUser.email.toLowerCase()
-    ) ||
-    db.ambassadors[0];
+    ) || {
+      id: `amb-${currentUser.id}`,
+      userId: currentUser.id,
+      fullName: currentUser.fullName || currentApplication?.fullName || "Ambassador",
+      email: currentUser.email,
+      phone: currentUser.phone || currentApplication?.phone || "",
+      referralCode: generateReferralCode(
+        currentUser.fullName || currentApplication?.fullName || "Ambassador",
+        db.ambassadors.map((a) => a.referralCode)
+      ),
+      level: "Starter",
+      totalPoints: 0,
+      availablePoints: 0,
+      totalCommissionKes: 0,
+      availableCommissionKes: 0,
+      paidCommissionKes: 0,
+      payoutMethod: "MPESA",
+      payoutPhone: currentUser.phone || currentApplication?.phone || "",
+      county: currentApplication?.county || "Nairobi",
+      institution: currentApplication?.institution || "",
+      occupation: currentApplication?.occupation || "Ambassador",
+      bio: `${currentApplication?.occupation || "Ambassador"} representing SCDS in ${currentApplication?.county || "Kenya"}.`,
+      isActive: true,
+      clickCount: 0,
+      badgeIds: [],
+      createdAt: currentApplication?.createdAt || new Date().toISOString(),
+    };
   const unreadCount = db.notifications.filter(
     (n) => n.userId === activeAmb.userId && !n.isRead
   ).length;

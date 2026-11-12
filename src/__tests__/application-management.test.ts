@@ -140,4 +140,20 @@ describe("Ambassador Application Management, Deletion & Candidate Readiness Suit
     const healedApp = healedState.applications.find((a) => a.id === "app-4");
     expect(healedApp?.status).toBe("approved");
   });
+
+  it("5. Guarantees Mathew (SCDS-MAT-K4RH) exists, is active, and receives referrals", () => {
+    const consistent = ensureStateConsistency(INITIAL_DATABASE_STATE);
+    const mathewAmb = consistent.ambassadors.find(
+      (a) => a.referralCode === "SCDS-MAT-K4RH"
+    );
+    expect(mathewAmb).toBeDefined();
+    expect(mathewAmb?.isActive).toBe(true);
+    expect(mathewAmb?.fullName).toBe("Mathew");
+
+    const mathewApp = consistent.applications.find(
+      (a) => a.id === "app-mathew-k4rh" || a.fullName === "Mathew"
+    );
+    expect(mathewApp).toBeDefined();
+    expect(mathewApp?.status).toBe("approved");
+  });
 });

@@ -14,10 +14,10 @@ describe("Approved Ambassador Login & Privileges Healing", () => {
   it("guarantees approved ambassadors are never restricted from their dashboard", () => {
     let state: AppDatabaseState = JSON.parse(JSON.stringify(INITIAL_DATABASE_STATE));
 
-    // 1. Joy Wambui registers
+    // 1. New Applicant registers
     const registration = submitAmbassadorApplicationOp(state, {
-      fullName: "Joy Wambui",
-      email: "joywambo@gmail.com",
+      fullName: "Test Applicant",
+      email: "testapplicant@gmail.com",
       phone: "0712345678",
       password: "Password123!",
       county: "Nairobi",
@@ -38,15 +38,15 @@ describe("Approved Ambassador Login & Privileges Healing", () => {
     });
     state = review.nextState;
 
-    const joyProfile = state.profiles.find((p) => p.email === "joywambo@gmail.com");
-    expect(joyProfile).toBeDefined();
-    expect(joyProfile!.role).toBe("ambassador");
-    expect(joyProfile!.status).toBe("active");
+    const testProfile = state.profiles.find((p) => p.email === "testapplicant@gmail.com");
+    expect(testProfile).toBeDefined();
+    expect(testProfile!.role).toBe("ambassador");
+    expect(testProfile!.status).toBe("active");
 
-    const joyAmb = state.ambassadors.find((a) => a.email === "joywambo@gmail.com");
-    expect(joyAmb).toBeDefined();
-    expect(joyAmb!.isActive).toBe(true);
-    expect(joyAmb!.referralCode).toBeTruthy();
+    const testAmb = state.ambassadors.find((a) => a.email === "testapplicant@gmail.com");
+    expect(testAmb).toBeDefined();
+    expect(testAmb!.isActive).toBe(true);
+    expect(testAmb!.referralCode).toBeTruthy();
   });
 
   it("auto-heals and generates active ambassador profile if missing during cloud sync", () => {
@@ -54,10 +54,10 @@ describe("Approved Ambassador Login & Privileges Healing", () => {
 
     // Simulate an approved application existing in state, but ambassadors array is missing their record
     state.applications.unshift({
-      id: "app-joy-test",
-      userId: "user-joy-test",
-      fullName: "Joy Wambui",
-      email: "joywambo@gmail.com",
+      id: "app-sync-test",
+      userId: "user-sync-test",
+      fullName: "Sync Candidate",
+      email: "synccandidate@gmail.com",
       phone: "0712345678",
       county: "Nairobi",
       institution: "huj",
@@ -71,18 +71,18 @@ describe("Approved Ambassador Login & Privileges Healing", () => {
     });
 
     // Before consistency healing: ambassador profile is absent
-    expect(state.ambassadors.find((a) => a.email === "joywambo@gmail.com")).toBeUndefined();
+    expect(state.ambassadors.find((a) => a.email === "synccandidate@gmail.com")).toBeUndefined();
 
     // Run ensureStateConsistency
     const healed = ensureStateConsistency(state);
 
     // After consistency healing: ambassador profile is restored and active!
-    const healedAmb = healed.ambassadors.find((a) => a.email === "joywambo@gmail.com");
+    const healedAmb = healed.ambassadors.find((a) => a.email === "synccandidate@gmail.com");
     expect(healedAmb).toBeDefined();
     expect(healedAmb!.isActive).toBe(true);
     expect(healedAmb!.referralCode).toMatch(/^SCDS-[A-Z]{3}-[A-Z0-9]{4}$/);
 
-    const healedProfile = healed.profiles.find((p) => p.email === "joywambo@gmail.com");
+    const healedProfile = healed.profiles.find((p) => p.email === "synccandidate@gmail.com");
     expect(healedProfile).toBeDefined();
     expect(healedProfile!.role).toBe("ambassador");
     expect(healedProfile!.status).toBe("active");
@@ -112,5 +112,22 @@ describe("Approved Ambassador Login & Privileges Healing", () => {
     // Approved applicant (like Joy Wambui in user's report) -> APPROVED!
     expect(isApprovedCheck("learner", "pending", "approved", false)).toBe(true);
     expect(isApprovedCheck("ambassador", "active", "approved", true)).toBe(true);
+    expect(isApprovedCheck("applicant", "approved", "approved", false)).toBe(true);
+  });
+
+  it("verifies Joy Wambui (joywambo@gmail.com) is seeded and accessible out of the box", () => {
+    const joyProfile = INITIAL_DATABASE_STATE.profiles.find((p) => p.email === "joywambo@gmail.com");
+    expect(joyProfile).toBeDefined();
+    expect(joyProfile!.role).toBe("ambassador");
+    expect(joyProfile!.status).toBe("active");
+
+    const joyApp = INITIAL_DATABASE_STATE.applications.find((a) => a.email === "joywambo@gmail.com");
+    expect(joyApp).toBeDefined();
+    expect(joyApp!.status).toBe("approved");
+
+    const joyAmb = INITIAL_DATABASE_STATE.ambassadors.find((a) => a.email === "joywambo@gmail.com");
+    expect(joyAmb).toBeDefined();
+    expect(joyAmb!.isActive).toBe(true);
+    expect(joyAmb!.referralCode).toBe("SCDS-JOY-W789");
   });
 });

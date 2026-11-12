@@ -419,21 +419,21 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         a.email.toLowerCase() === cleanEmail
     );
 
+    const isApprovedCandidate =
+      currentUser.role?.toLowerCase() === "ambassador" ||
+      currentUser.status?.toLowerCase() === "active" ||
+      currentUser.status?.toLowerCase() === "approved" ||
+      currentApplication?.status?.toLowerCase() === "approved";
+
     if (existing) {
-      if (
-        (currentApplication?.status === "approved" || currentUser.role === "ambassador") &&
-        !existing.isActive
-      ) {
+      if (isApprovedCandidate && !existing.isActive) {
         return { ...existing, isActive: true };
       }
       return existing;
     }
 
     // Auto-synthesize active ambassador profile if approved by admin
-    if (
-      currentApplication?.status === "approved" ||
-      currentUser.role === "ambassador"
-    ) {
+    if (isApprovedCandidate) {
       const existingCodes = db.ambassadors.map((a) => a.referralCode);
       const referralCode = generateReferralCode(
         currentUser.fullName || currentApplication?.fullName || "Ambassador",
@@ -538,11 +538,17 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       };
     }
 
-    // If their application was approved, ensure their profile role is active ambassador
+    // If their application was approved or profile is marked active/approved, ensure their profile role is active ambassador
     const app = db.applications.find(
       (a) => (a.userId && a.userId === profile!.id) || a.email.toLowerCase() === clean
     );
-    if (app?.status === "approved" && (profile.role !== "ambassador" || profile.status !== "active")) {
+    const isApprovedCandidate =
+      app?.status?.toLowerCase() === "approved" ||
+      profile.role?.toLowerCase() === "ambassador" ||
+      profile.status?.toLowerCase() === "active" ||
+      profile.status?.toLowerCase() === "approved";
+
+    if (isApprovedCandidate && (profile.role !== "ambassador" || profile.status !== "active")) {
       profile = { ...profile, role: "ambassador", status: "active" };
       const nextDb = ensureStateConsistency({
         ...db,

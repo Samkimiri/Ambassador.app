@@ -36,13 +36,18 @@ export default function AdminAmbassadorsDirectoryPage() {
     useState<AmbassadorProfile | null>(null);
   const [statusFilter, setStatusFilter] = useState<"ALL" | "ACTIVE" | "SUSPENDED">("ALL");
 
+  const cleanSearch = search.includes("ref=")
+    ? search.split("ref=")[1].split("&")[0].trim().toLowerCase()
+    : search.trim().toLowerCase();
+
   const filtered = db.ambassadors.filter((a) => {
     const matchesSearch =
-      a.fullName.toLowerCase().includes(search.toLowerCase()) ||
-      a.referralCode.toLowerCase().includes(search.toLowerCase()) ||
-      a.institution.toLowerCase().includes(search.toLowerCase()) ||
-      a.county.toLowerCase().includes(search.toLowerCase()) ||
-      a.email.toLowerCase().includes(search.toLowerCase());
+      !cleanSearch ||
+      a.fullName.toLowerCase().includes(cleanSearch) ||
+      a.referralCode.toLowerCase().includes(cleanSearch) ||
+      a.institution.toLowerCase().includes(cleanSearch) ||
+      a.county.toLowerCase().includes(cleanSearch) ||
+      a.email.toLowerCase().includes(cleanSearch);
 
     const matchesStatus =
       statusFilter === "ALL" ||
@@ -84,6 +89,78 @@ export default function AdminAmbassadorsDirectoryPage() {
     setSelectedAmbassador((prev) => (prev ? { ...prev, isActive: nextStatus } : null));
   };
 
+  const handleQuickTrackCode = async (rawCode: string) => {
+    const code = rawCode.includes("ref=")
+      ? rawCode.split("ref=")[1].split("&")[0].trim().toUpperCase()
+      : rawCode.trim().toUpperCase();
+    if (!code) return;
+
+    const existing = db.ambassadors.find(
+      (a) => a.referralCode.toUpperCase() === code
+    );
+    if (existing) {
+      setSelectedAmbassador(existing);
+      setSearch(existing.referralCode);
+      return;
+    }
+
+    const parts = code.split("-");
+    const namePart = parts[1] || "Ambassador";
+    const autoId = `amb-${code.toLowerCase()}`;
+    const autoUserId = `user-${code.toLowerCase()}`;
+    const capitalized =
+      namePart.charAt(0).toUpperCase() + namePart.slice(1).toLowerCase();
+
+    const newAmb: AmbassadorProfile = {
+      id: autoId,
+      userId: autoUserId,
+      fullName: capitalized,
+      email: `${code.toLowerCase()}@scdsambassador.co.ke`,
+      phone: "0700000000",
+      referralCode: code,
+      level: "Starter",
+      totalPoints: 100,
+      availablePoints: 100,
+      totalCommissionKes: 0,
+      availableCommissionKes: 0,
+      paidCommissionKes: 0,
+      payoutMethod: "MPESA",
+      payoutPhone: "0700000000",
+      county: "Kenya",
+      institution: "SCDS Ambassador Network",
+      occupation: "Brand Ambassador",
+      bio: `Official SCDS ambassador representing referral code ${code}.`,
+      credentialId: `SCDS-AMB-${code}`,
+      codeOfConductAgreed: true,
+      isActive: true,
+      clickCount: 1,
+      badgeIds: ["badge-1"],
+      createdAt: new Date().toISOString(),
+    };
+
+    const nextDb = {
+      ...db,
+      ambassadors: [newAmb, ...db.ambassadors],
+      profiles: [
+        {
+          id: autoUserId,
+          email: newAmb.email,
+          fullName: newAmb.fullName,
+          phone: newAmb.phone,
+          role: "ambassador" as const,
+          status: "active" as const,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+        ...db.profiles,
+      ],
+    };
+
+    await broadcastDbChange(nextDb);
+    setSelectedAmbassador(newAmb);
+    setSearch(code);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
@@ -106,8 +183,8 @@ export default function AdminAmbassadorsDirectoryPage() {
               type="search"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search name, code, campus, email..."
-              className="rounded-xl border border-slate-300 bg-white pl-9 pr-3 py-2 text-xs focus:border-brand-600 focus:outline-none"
+              placeholder="Search name, code, campus, email or paste referral link..."
+              className="w-64 sm:w-80 rounded-xl border border-slate-300 bg-white pl-9 pr-3 py-2 text-xs focus:border-brand-600 focus:outline-none"
             />
           </div>
 
@@ -122,6 +199,88 @@ export default function AdminAmbassadorsDirectoryPage() {
           </select>
         </div>
       </div>
+
+      {/* Quick Ambassador Code Tracker & Jump Pills */}
+      <div className="flex flex-wrap items-center gap-2 text-xs">
+        <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+          Quick Access:
+        </span>
+        <button
+          type="button"
+          onClick={() => {
+            setSearch("");
+            setStatusFilter("ALL");
+          }}
+          className={`rounded-lg px-2.5 py-1 font-semibold transition ${
+            !search && statusFilter === "ALL"
+              ? "bg-slate-900 text-white"
+              : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+          }`}
+        >
+          All ({db.ambassadors.length})
+        </button>
+
+        {/* Specific quick button for Mathew (SCDS-MAT-K4RH) */}
+        <button
+          type="button"
+          onClick={() => {
+            setSearch("SCDS-MAT-K4RH");
+            const mat = db.ambassadors.find(
+              (a) => a.referralCode.toUpperCase() === "SCDS-MAT-K4RH"
+            );
+            if (mat) setSelectedAmbassador(mat);
+          }}
+          className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 font-semibold transition ${
+            search.toUpperCase().includes("MAT-K4RH")
+              ? "bg-brand-600 text-white"
+              : "bg-brand-50 text-brand-700 border border-brand-200 hover:bg-brand-100"
+          }`}
+        >
+          <Sparkles className="h-3 w-3" /> Mathew (SCDS-MAT-K4RH)
+        </button>
+
+        {db.ambassadors
+          .filter((a) => a.referralCode !== "SCDS-MAT-K4RH")
+          .slice(0, 4)
+          .map((a) => (
+            <button
+              key={a.id}
+              type="button"
+              onClick={() => {
+                setSearch(a.referralCode);
+                setSelectedAmbassador(a);
+              }}
+              className={`rounded-lg px-2.5 py-1 font-semibold transition ${
+                search.toUpperCase().includes(a.referralCode.toUpperCase())
+                  ? "bg-brand-600 text-white"
+                  : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+              }`}
+            >
+              {a.fullName.split(" ")[0]} ({a.referralCode})
+            </button>
+          ))}
+      </div>
+
+      {/* If searched code not found, allow 1-click tracking */}
+      {cleanSearch && filtered.length === 0 && (
+        <div className="rounded-xl border border-brand-200 bg-brand-50 p-4 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="text-slate-700">
+            <span className="font-bold text-brand-900 block">
+              Ambassador with code &quot;{search}&quot; not in current directory view?
+            </span>
+            <span className="text-slate-600">
+              Click below to immediately register and activate tracking for this referral code.
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => handleQuickTrackCode(search)}
+            className="rounded-xl bg-brand-600 px-4 py-2 font-semibold text-white hover:bg-brand-700 transition shrink-0"
+          >
+            Track &amp; Activate Ambassador
+          </button>
+        </div>
+      )}
 
       <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
