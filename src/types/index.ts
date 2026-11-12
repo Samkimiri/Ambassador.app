@@ -1,6 +1,6 @@
 export type UserRole = "super_admin" | "ambassador" | "learner";
 
-export type AccountStatus = "active" | "pending" | "suspended" | "rejected";
+export type AccountStatus = "active" | "pending" | "suspended" | "blocked" | "rejected";
 
 export type AmbassadorLevel = "Starter" | "Bronze" | "Silver" | "Gold" | "Elite";
 
@@ -112,6 +112,9 @@ export interface AmbassadorProfile {
   credentialId?: string; // Official Verification ID e.g. SCDS-AMB-2026-9481
   codeOfConductAgreed?: boolean;
   isActive: boolean;
+  isBlocked?: boolean;
+  blockReason?: string;
+  blockedAt?: string;
   clickCount: number;
   badgeIds: string[];
   createdAt: string;

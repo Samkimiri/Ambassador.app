@@ -19,6 +19,8 @@ import {
   SupportRequest,
 } from "@/types";
 import {
+  blockAmbassadorAccountOp,
+  deleteAmbassadorAccountOp,
   deleteAmbassadorApplicationOp,
   processPayoutRequestOp,
   recordReferralClickOp,
@@ -26,6 +28,7 @@ import {
   reviewAmbassadorApplicationOp,
   submitAmbassadorApplicationOp,
   submitLearnerEnquiryOp,
+  unblockAmbassadorAccountOp,
   updateReferralStatusOp,
   verifyEnrolmentAndIssueRewardsOp,
 } from "@/lib/store-engine";
@@ -66,6 +69,9 @@ interface AppContextValue {
     reviewNotes?: string
   ) => void;
   deleteApplication: (applicationId: string) => Promise<void>;
+  deleteAmbassadorAccount: (ambassadorId: string) => Promise<void>;
+  blockAmbassadorAccount: (ambassadorId: string, reason?: string) => Promise<void>;
+  unblockAmbassadorAccount: (ambassadorId: string) => Promise<void>;
   submitLearnerEnquiry: (
     input: Parameters<typeof submitLearnerEnquiryOp>[1]
   ) => Referral;
@@ -141,16 +147,20 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (!serverDb || !Array.isArray(serverDb.applications)) return;
 
     setDb((prev) => {
-      const deletedSet = new Set([
+      const deletedAppSet = new Set([
         ...(prev.deletedApplicationIds || []),
         ...(serverDb.deletedApplicationIds || []),
+      ]);
+      const deletedUserSet = new Set([
+        ...(prev.deletedUserIds || []),
+        ...(serverDb.deletedUserIds || []),
       ]);
 
       const appMap = new Map<string, AmbassadorApplication>();
 
       // 1. Process server applications, protecting local reviews and filtering deletions
       for (const sApp of serverDb.applications) {
-        if (deletedSet.has(sApp.id)) continue;
+        if (deletedAppSet.has(sApp.id)) continue;
         const localApp = prev.applications.find((a) => a.id === sApp.id);
         if (localApp) {
           // If locally approved, KEEP APPROVED! Never downgrade approved status to pending
@@ -172,21 +182,31 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
       // 2. Add any local applications that are not yet on the server (and not deleted)
       for (const localApp of prev.applications) {
-        if (deletedSet.has(localApp.id)) continue;
+        if (deletedAppSet.has(localApp.id)) continue;
         if (!appMap.has(localApp.id)) {
           appMap.set(localApp.id, localApp);
         }
       }
 
-      const profileMap = new Map(serverDb.profiles.map((p) => [p.id, p]));
+      const profileMap = new Map(
+        serverDb.profiles
+          .filter((p) => !deletedUserSet.has(p.id))
+          .map((p) => [p.id, p])
+      );
       for (const localProf of prev.profiles) {
+        if (deletedUserSet.has(localProf.id)) continue;
         if (!profileMap.has(localProf.id)) {
           profileMap.set(localProf.id, localProf);
         }
       }
 
-      const ambMap = new Map(serverDb.ambassadors.map((a) => [a.id, a]));
+      const ambMap = new Map(
+        serverDb.ambassadors
+          .filter((a) => !deletedUserSet.has(a.userId) && !deletedUserSet.has(a.id))
+          .map((a) => [a.id, a])
+      );
       for (const localAmb of prev.ambassadors) {
+        if (deletedUserSet.has(localAmb.userId) || deletedUserSet.has(localAmb.id)) continue;
         if (!ambMap.has(localAmb.id)) {
           ambMap.set(localAmb.id, localAmb);
         }
@@ -213,7 +233,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         ambassadors: Array.from(ambMap.values()),
         referrals: Array.from(refMap.values()),
         payoutRequests: Array.from(payoutMap.values()),
-        deletedApplicationIds: Array.from(deletedSet),
+        deletedApplicationIds: Array.from(deletedAppSet),
+        deletedUserIds: Array.from(deletedUserSet),
       };
 
       const consistent = ensureStateConsistency(mergedState);
@@ -245,7 +266,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     try {
       const savedDb = localStorage.getItem(STORAGE_KEY);
       if (savedDb) {
-        setDb(JSON.parse(savedDb));
+        setDb(ensureStateConsistency(JSON.parse(savedDb)));
+      } else {
+        setDb(ensureStateConsistency(INITIAL_DATABASE_STATE));
       }
       const savedSession = localStorage.getItem(SESSION_KEY);
       if (savedSession !== null) {
@@ -398,6 +421,17 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
   }, [currentUserId, hydrated]);
 
+  // If current logged-in user was deleted, immediately clear session
+  useEffect(() => {
+    if (currentUserId && hydrated) {
+      const deletedUserSet = new Set(db.deletedUserIds || []);
+      const userExists = db.profiles.some((p) => p.id === currentUserId);
+      if (deletedUserSet.has(currentUserId) || (!userExists && currentUserId !== "user-admin-1")) {
+        signOut();
+      }
+    }
+  }, [currentUserId, db.deletedUserIds, db.profiles, hydrated]);
+
   const currentUser =
     db.profiles.find((p) => p.id === currentUserId) || null;
 
@@ -419,14 +453,22 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         a.email.toLowerCase() === cleanEmail
     );
 
+    const isBlocked =
+      currentUser.status === "blocked" ||
+      currentUser.status === "suspended";
+
     const isApprovedCandidate =
-      currentUser.role?.toLowerCase() === "ambassador" ||
-      currentUser.status?.toLowerCase() === "active" ||
-      currentUser.status?.toLowerCase() === "approved" ||
-      currentApplication?.status?.toLowerCase() === "approved";
+      !isBlocked &&
+      (currentUser.role?.toLowerCase() === "ambassador" ||
+        currentUser.status?.toLowerCase() === "active" ||
+        currentUser.status?.toLowerCase() === "approved" ||
+        currentApplication?.status?.toLowerCase() === "approved");
 
     if (existing) {
-      if (isApprovedCandidate && !existing.isActive) {
+      if (isBlocked) {
+        return { ...existing, isActive: false, isBlocked: true };
+      }
+      if (isApprovedCandidate && !existing.isActive && !existing.isBlocked) {
         return { ...existing, isActive: true };
       }
       return existing;
@@ -642,6 +684,34 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const { nextState } = deleteAmbassadorApplicationOp(db, {
       actor: currentUser,
       applicationId,
+    });
+    await broadcastDbChange(nextState);
+  };
+
+  const deleteAmbassadorAccount = async (ambassadorId: string) => {
+    if (!currentUser) throw new Error("Not signed in.");
+    const { nextState } = deleteAmbassadorAccountOp(db, {
+      actor: currentUser,
+      ambassadorId,
+    });
+    await broadcastDbChange(nextState);
+  };
+
+  const blockAmbassadorAccount = async (ambassadorId: string, reason?: string) => {
+    if (!currentUser) throw new Error("Not signed in.");
+    const { nextState } = blockAmbassadorAccountOp(db, {
+      actor: currentUser,
+      ambassadorId,
+      reason,
+    });
+    await broadcastDbChange(nextState);
+  };
+
+  const unblockAmbassadorAccount = async (ambassadorId: string) => {
+    if (!currentUser) throw new Error("Not signed in.");
+    const { nextState } = unblockAmbassadorAccountOp(db, {
+      actor: currentUser,
+      ambassadorId,
     });
     await broadcastDbChange(nextState);
   };
@@ -960,6 +1030,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         submitApplication,
         reviewApplication,
         deleteApplication,
+        deleteAmbassadorAccount,
+        blockAmbassadorAccount,
+        unblockAmbassadorAccount,
         submitLearnerEnquiry,
         updateReferralStatus,
         verifyEnrolment,

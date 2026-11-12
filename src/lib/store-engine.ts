@@ -63,11 +63,21 @@ export function submitAmbassadorApplicationOp(
   }
 ): { nextState: AppDatabaseState; application: AmbassadorApplication; profile: Profile } {
   const normalizedEmail = input.email.trim().toLowerCase();
-  const existingApp = state.applications.find(
-    (a) => a.email.toLowerCase() === normalizedEmail && a.status !== "rejected"
+  const deletedAppSet = new Set(state.deletedApplicationIds || []);
+  const activeApplications = (state.applications || []).filter((a) => !deletedAppSet.has(a.id));
+
+  // Check if an existing application or profile exists with this email
+  const existingApp = activeApplications.find(
+    (a) => a.email.toLowerCase() === normalizedEmail
   );
-  if (existingApp) {
-    throw new Error("An application with this email address already exists.");
+  const existingProfile = (state.profiles || []).find(
+    (p) => p.email.toLowerCase() === normalizedEmail && p.role !== "super_admin"
+  );
+
+  if (existingApp || existingProfile) {
+    throw new Error(
+      "An application or account with this email address already exists. Each email can only be used once. Please sign in or contact SCDS Support."
+    );
   }
 
   const now = new Date().toISOString();
@@ -333,23 +343,26 @@ export function deleteAmbassadorApplicationOp(
 
   const now = new Date().toISOString();
   const nextApplications = state.applications.filter((a) => a.id !== params.applicationId);
-  const deletedIds = Array.from(
+  const deletedAppIds = Array.from(
     new Set([...(state.deletedApplicationIds || []), params.applicationId])
   );
 
-  // If this applicant has never earned commissions or referred verified students, clean up their learner profile
-  const hasReferrals = state.referrals.some(
-    (r) =>
-      r.ambassadorId === app.userId ||
-      (app.email && r.referralCode.toLowerCase() === app.email.toLowerCase())
+  // Remove corresponding profile and ambassador profile so the email is freed and the user cannot access the account
+  const nextProfiles = state.profiles.filter(
+    (p) =>
+      p.id !== app.userId &&
+      p.email.toLowerCase() !== app.email.toLowerCase()
   );
-  const nextProfiles = hasReferrals
-    ? state.profiles
-    : state.profiles.filter(
-        (p) =>
-          p.id !== app.userId &&
-          p.email.toLowerCase() !== app.email.toLowerCase()
-      );
+
+  const nextAmbassadors = state.ambassadors.filter(
+    (a) =>
+      a.userId !== app.userId &&
+      a.email.toLowerCase() !== app.email.toLowerCase()
+  );
+
+  const deletedUserIds = Array.from(
+    new Set([...(state.deletedUserIds || []), app.userId])
+  );
 
   const audit: AuditLog = {
     id: `audit-${Date.now()}-del`,
@@ -359,7 +372,7 @@ export function deleteAmbassadorApplicationOp(
     action: "APPLICATION_DELETED",
     entityType: "ambassador_application",
     entityId: app.id,
-    summary: `${params.actor.fullName} permanently deleted application #${app.id.slice(-6).toUpperCase()} for ${app.fullName} (${app.email}).`,
+    summary: `${params.actor.fullName} permanently deleted application #${app.id.slice(-6).toUpperCase()} for ${app.fullName} (${app.email}). Account wiped.`,
     createdAt: now,
   };
 
@@ -367,11 +380,245 @@ export function deleteAmbassadorApplicationOp(
     nextState: {
       ...state,
       applications: nextApplications,
+      ambassadors: nextAmbassadors,
       profiles: nextProfiles,
-      deletedApplicationIds: deletedIds,
+      deletedApplicationIds: deletedAppIds,
+      deletedUserIds,
       auditLogs: [audit, ...state.auditLogs],
     },
     deletedApp: app,
+  };
+}
+
+export function deleteAmbassadorAccountOp(
+  state: AppDatabaseState,
+  params: {
+    actor: Profile;
+    ambassadorId?: string;
+    userId?: string;
+    email?: string;
+  }
+): { nextState: AppDatabaseState; deletedInfo: { fullName: string; email: string } } {
+  if (params.actor.role !== "super_admin") {
+    throw new Error("Unauthorized: Only Super Administrators can delete ambassador accounts.");
+  }
+
+  const amb = state.ambassadors.find(
+    (a) =>
+      (params.ambassadorId && a.id === params.ambassadorId) ||
+      (params.userId && a.userId === params.userId) ||
+      (params.email && a.email.toLowerCase() === params.email.toLowerCase())
+  );
+  const user = state.profiles.find(
+    (p) =>
+      (params.userId && p.id === params.userId) ||
+      (amb && p.id === amb.userId) ||
+      (params.email && p.email.toLowerCase() === params.email.toLowerCase())
+  );
+  const targetEmail = (amb?.email || user?.email || params.email || "").trim().toLowerCase();
+  const targetUserId = user?.id || amb?.userId || params.userId;
+  const targetAmbId = amb?.id || params.ambassadorId;
+
+  if (!amb && !user && !targetEmail) {
+    throw new Error("Ambassador account not found.");
+  }
+
+  const targetName = amb?.fullName || user?.fullName || "Ambassador";
+
+  // Find all application IDs associated with this person
+  const relatedApps = state.applications.filter(
+    (a) =>
+      (targetUserId && a.userId === targetUserId) ||
+      (targetEmail && a.email.toLowerCase() === targetEmail)
+  );
+  const relatedAppIds = relatedApps.map((a) => a.id);
+
+  const nextApplications = state.applications.filter(
+    (a) =>
+      !(targetUserId && a.userId === targetUserId) &&
+      !(targetEmail && a.email.toLowerCase() === targetEmail)
+  );
+
+  const nextAmbassadors = state.ambassadors.filter(
+    (a) =>
+      !(targetAmbId && a.id === targetAmbId) &&
+      !(targetUserId && a.userId === targetUserId) &&
+      !(targetEmail && a.email.toLowerCase() === targetEmail)
+  );
+
+  const nextProfiles = state.profiles.filter(
+    (p) =>
+      !(targetUserId && p.id === targetUserId) &&
+      !(targetEmail && p.email.toLowerCase() === targetEmail)
+  );
+
+  const deletedAppIds = Array.from(
+    new Set([...(state.deletedApplicationIds || []), ...relatedAppIds])
+  );
+  const deletedUserIds = Array.from(
+    new Set([
+      ...(state.deletedUserIds || []),
+      ...(targetUserId ? [targetUserId] : []),
+      ...(targetAmbId ? [targetAmbId] : []),
+    ])
+  );
+
+  const now = new Date().toISOString();
+  const audit: AuditLog = {
+    id: `audit-${Date.now()}-del-amb`,
+    actorId: params.actor.id,
+    actorEmail: params.actor.email,
+    actorRole: params.actor.role,
+    action: "AMBASSADOR_ACCOUNT_DELETED",
+    entityType: "ambassador_profile",
+    entityId: targetUserId || targetEmail,
+    summary: `${params.actor.fullName} permanently deleted ambassador account & applications for ${targetName} (${targetEmail}). Account wiped permanently.`,
+    createdAt: now,
+  };
+
+  return {
+    nextState: {
+      ...state,
+      applications: nextApplications,
+      ambassadors: nextAmbassadors,
+      profiles: nextProfiles,
+      deletedApplicationIds: deletedAppIds,
+      deletedUserIds,
+      auditLogs: [audit, ...state.auditLogs],
+    },
+    deletedInfo: {
+      fullName: targetName,
+      email: targetEmail,
+    },
+  };
+}
+
+export function blockAmbassadorAccountOp(
+  state: AppDatabaseState,
+  params: {
+    actor: Profile;
+    ambassadorId: string;
+    reason?: string;
+  }
+): { nextState: AppDatabaseState; ambassador: AmbassadorProfile } {
+  if (params.actor.role !== "super_admin") {
+    throw new Error("Unauthorized: Only Super Administrators can block accounts.");
+  }
+
+  const amb = state.ambassadors.find((a) => a.id === params.ambassadorId);
+  if (!amb) throw new Error("Ambassador not found.");
+
+  const now = new Date().toISOString();
+  const reasonText = params.reason?.trim() || "Administrative review / Policy compliance";
+
+  const updatedAmb: AmbassadorProfile = {
+    ...amb,
+    isActive: false,
+    isBlocked: true,
+    blockReason: reasonText,
+    blockedAt: now,
+  };
+
+  const updatedProfiles = state.profiles.map((p) =>
+    p.id === amb.userId || p.email.toLowerCase() === amb.email.toLowerCase()
+      ? { ...p, status: "blocked" as const, updatedAt: now }
+      : p
+  );
+
+  const notification: AppNotification = {
+    id: `notif-block-${Date.now()}`,
+    userId: amb.userId,
+    title: "Account Privileges Suspended",
+    message: `Your SCDS Ambassador account privileges have been suspended by the administration. Reason: ${reasonText}. Please contact SCDS support if you have questions.`,
+    type: "warning",
+    isRead: false,
+    createdAt: now,
+  };
+
+  const audit: AuditLog = {
+    id: `audit-${Date.now()}-block`,
+    actorId: params.actor.id,
+    actorEmail: params.actor.email,
+    actorRole: params.actor.role,
+    action: "AMBASSADOR_BLOCKED",
+    entityType: "ambassador_profile",
+    entityId: amb.id,
+    summary: `${params.actor.fullName} blocked ambassador ${amb.fullName} (${amb.referralCode}). Reason: ${reasonText}.`,
+    createdAt: now,
+  };
+
+  return {
+    nextState: {
+      ...state,
+      ambassadors: state.ambassadors.map((a) => (a.id === amb.id ? updatedAmb : a)),
+      profiles: updatedProfiles,
+      notifications: [notification, ...state.notifications],
+      auditLogs: [audit, ...state.auditLogs],
+    },
+    ambassador: updatedAmb,
+  };
+}
+
+export function unblockAmbassadorAccountOp(
+  state: AppDatabaseState,
+  params: {
+    actor: Profile;
+    ambassadorId: string;
+  }
+): { nextState: AppDatabaseState; ambassador: AmbassadorProfile } {
+  if (params.actor.role !== "super_admin") {
+    throw new Error("Unauthorized: Only Super Administrators can unblock accounts.");
+  }
+
+  const amb = state.ambassadors.find((a) => a.id === params.ambassadorId);
+  if (!amb) throw new Error("Ambassador not found.");
+
+  const now = new Date().toISOString();
+
+  const updatedAmb: AmbassadorProfile = {
+    ...amb,
+    isActive: true,
+    isBlocked: false,
+    blockReason: undefined,
+  };
+
+  const updatedProfiles = state.profiles.map((p) =>
+    p.id === amb.userId || p.email.toLowerCase() === amb.email.toLowerCase()
+      ? { ...p, status: "active" as const, updatedAt: now }
+      : p
+  );
+
+  const notification: AppNotification = {
+    id: `notif-unblock-${Date.now()}`,
+    userId: amb.userId,
+    title: "Account Privileges Restored",
+    message: `Your SCDS Ambassador account has been reinstated by the administration. You now have full access to your referral links, marketing tools, and rewards.`,
+    type: "success",
+    isRead: false,
+    createdAt: now,
+  };
+
+  const audit: AuditLog = {
+    id: `audit-${Date.now()}-unblock`,
+    actorId: params.actor.id,
+    actorEmail: params.actor.email,
+    actorRole: params.actor.role,
+    action: "AMBASSADOR_UNBLOCKED",
+    entityType: "ambassador_profile",
+    entityId: amb.id,
+    summary: `${params.actor.fullName} unblocked ambassador ${amb.fullName} (${amb.referralCode}). Full privileges restored.`,
+    createdAt: now,
+  };
+
+  return {
+    nextState: {
+      ...state,
+      ambassadors: state.ambassadors.map((a) => (a.id === amb.id ? updatedAmb : a)),
+      profiles: updatedProfiles,
+      notifications: [notification, ...state.notifications],
+      auditLogs: [audit, ...state.auditLogs],
+    },
+    ambassador: updatedAmb,
   };
 }
 
@@ -741,7 +988,7 @@ export function verifyEnrolmentAndIssueRewardsOp(
           verifiedAt: now,
           updatedAt: now,
           events: [
-            ...r.events,
+            ...(r.events || []),
             {
               id: `ev-${Date.now()}`,
               referralId: r.id,
@@ -909,7 +1156,7 @@ export function updateReferralStatusOp(
           referralCode: targetAmbassador!.referralCode,
           updatedAt: now,
           events: [
-            ...r.events,
+            ...(r.events || []),
             {
               id: `ev-${Date.now()}`,
               referralId: r.id,

@@ -2,8 +2,10 @@
 
 import React, { useState } from "react";
 import {
+  AlertTriangle,
   Award,
   BadgeCheck,
+  Ban,
   Briefcase,
   Building2,
   ChevronRight,
@@ -19,6 +21,7 @@ import {
   ShieldAlert,
   ShieldCheck,
   Sparkles,
+  Trash2,
   TrendingUp,
   UserCheck,
   Users,
@@ -30,11 +33,22 @@ import { LevelBadge } from "@/components/ui/status-badge";
 import { AmbassadorProfile } from "@/types";
 
 export default function AdminAmbassadorsDirectoryPage() {
-  const { db, broadcastDbChange } = useApp();
+  const {
+    db,
+    blockAmbassadorAccount,
+    unblockAmbassadorAccount,
+    deleteAmbassadorAccount,
+    broadcastDbChange,
+  } = useApp();
   const [search, setSearch] = useState("");
   const [selectedAmbassador, setSelectedAmbassador] =
     useState<AmbassadorProfile | null>(null);
-  const [statusFilter, setStatusFilter] = useState<"ALL" | "ACTIVE" | "SUSPENDED">("ALL");
+  const [statusFilter, setStatusFilter] = useState<"ALL" | "ACTIVE" | "BLOCKED">("ALL");
+  const [feedback, setFeedback] = useState<string | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [blockModalAmbassador, setBlockModalAmbassador] =
+    useState<AmbassadorProfile | null>(null);
+  const [blockReasonText, setBlockReasonText] = useState("");
 
   const cleanSearch = search.includes("ref=")
     ? search.split("ref=")[1].split("&")[0].trim().toLowerCase()
@@ -51,8 +65,8 @@ export default function AdminAmbassadorsDirectoryPage() {
 
     const matchesStatus =
       statusFilter === "ALL" ||
-      (statusFilter === "ACTIVE" && a.isActive) ||
-      (statusFilter === "SUSPENDED" && !a.isActive);
+      (statusFilter === "ACTIVE" && a.isActive && !a.isBlocked) ||
+      (statusFilter === "BLOCKED" && (a.isBlocked || !a.isActive));
 
     return matchesSearch && matchesStatus;
   });
@@ -69,24 +83,54 @@ export default function AdminAmbassadorsDirectoryPage() {
     )}`;
   };
 
-  const handleToggleActive = async (amb: AmbassadorProfile) => {
-    const nextStatus = !amb.isActive;
-    const nextDb = {
-      ...db,
-      ambassadors: db.ambassadors.map((a) =>
-        a.id === amb.id ? { ...a, isActive: nextStatus } : a
-      ),
-      profiles: db.profiles.map((p) =>
-        p.id === amb.userId
-          ? {
-              ...p,
-              status: (nextStatus ? "active" : "suspended") as "active" | "suspended",
-            }
-          : p
-      ),
-    };
-    await broadcastDbChange(nextDb);
-    setSelectedAmbassador((prev) => (prev ? { ...prev, isActive: nextStatus } : null));
+  const handleOpenBlockModal = (amb: AmbassadorProfile) => {
+    setBlockModalAmbassador(amb);
+    setBlockReasonText("Administrative review / Policy compliance check");
+  };
+
+  const handleConfirmBlock = async () => {
+    if (!blockModalAmbassador) return;
+    try {
+      await blockAmbassadorAccount(blockModalAmbassador.id, blockReasonText);
+      setFeedback(`Ambassador ${blockModalAmbassador.fullName} has been blocked and notified.`);
+      setBlockModalAmbassador(null);
+      setBlockReasonText("");
+      setSelectedAmbassador(null);
+      setTimeout(() => setFeedback(null), 4000);
+    } catch (err) {
+      setFeedback(`Failed to block ambassador: ${err instanceof Error ? err.message : "Error"}`);
+    }
+  };
+
+  const handleUnblock = async (amb: AmbassadorProfile) => {
+    try {
+      await unblockAmbassadorAccount(amb.id);
+      setFeedback(`Ambassador ${amb.fullName} has been unblocked. Privileges restored.`);
+      setSelectedAmbassador((prev) => (prev?.id === amb.id ? { ...prev, isActive: true, isBlocked: false } : prev));
+      setTimeout(() => setFeedback(null), 4000);
+    } catch (err) {
+      setFeedback(`Failed to unblock ambassador: ${err instanceof Error ? err.message : "Error"}`);
+    }
+  };
+
+  const handleDelete = async (amb: AmbassadorProfile) => {
+    if (deleteConfirmId !== amb.id) {
+      setDeleteConfirmId(amb.id);
+      setTimeout(() => {
+        setDeleteConfirmId((curr) => (curr === amb.id ? null : curr));
+      }, 5000);
+      return;
+    }
+
+    try {
+      await deleteAmbassadorAccount(amb.id);
+      setDeleteConfirmId(null);
+      setSelectedAmbassador(null);
+      setFeedback(`Ambassador ${amb.fullName} (${amb.email}) was permanently deleted from the database.`);
+      setTimeout(() => setFeedback(null), 5000);
+    } catch (err) {
+      setFeedback(`Failed to delete account: ${err instanceof Error ? err.message : "Error"}`);
+    }
   };
 
   const handleQuickTrackCode = async (rawCode: string) => {
@@ -190,15 +234,29 @@ export default function AdminAmbassadorsDirectoryPage() {
 
           <select
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as "ALL" | "ACTIVE" | "SUSPENDED")}
+            onChange={(e) => setStatusFilter(e.target.value as "ALL" | "ACTIVE" | "BLOCKED")}
             className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700"
           >
             <option value="ALL">All Statuses ({db.ambassadors.length})</option>
-            <option value="ACTIVE">Active ({db.ambassadors.filter((a) => a.isActive).length})</option>
-            <option value="SUSPENDED">Suspended ({db.ambassadors.filter((a) => !a.isActive).length})</option>
+            <option value="ACTIVE">Active ({db.ambassadors.filter((a) => a.isActive && !a.isBlocked).length})</option>
+            <option value="BLOCKED">Blocked ({db.ambassadors.filter((a) => a.isBlocked || !a.isActive).length})</option>
           </select>
         </div>
       </div>
+
+      {/* Admin Operations Feedback Banner */}
+      {feedback && (
+        <div className="rounded-xl border border-brand-200 bg-brand-50 p-3.5 text-xs font-semibold text-brand-900 flex items-center justify-between shadow-xs">
+          <span>{feedback}</span>
+          <button
+            type="button"
+            onClick={() => setFeedback(null)}
+            className="text-brand-600 hover:text-brand-900 text-xs font-bold"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
 
       {/* Quick Ambassador Code Tracker & Jump Pills */}
       <div className="flex flex-wrap items-center gap-2 text-xs">
@@ -333,12 +391,12 @@ export default function AdminAmbassadorsDirectoryPage() {
                     <td className="py-3.5 px-4">
                       <span
                         className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
-                          amb.isActive
+                          amb.isActive && !amb.isBlocked
                             ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
                             : "bg-rose-50 text-rose-700 border border-rose-200"
                         }`}
                       >
-                        {amb.isActive ? "Active" : "Suspended"}
+                        {amb.isActive && !amb.isBlocked ? "Active" : "Blocked"}
                       </span>
                     </td>
                     <td className="py-3.5 px-4 font-medium text-slate-700">
@@ -354,17 +412,52 @@ export default function AdminAmbassadorsDirectoryPage() {
                       {formatKes(amb.availableCommissionKes)}
                     </td>
                     <td className="py-3.5 px-4 text-right">
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedAmbassador(amb);
-                        }}
-                        className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100 hover:text-brand-600 transition"
-                      >
-                        <span>View Dossier</span>
-                        <ChevronRight className="h-3.5 w-3.5" />
-                      </button>
+                      <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedAmbassador(amb)}
+                          className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100 hover:text-brand-600 transition"
+                        >
+                          <span>Dossier</span>
+                          <ChevronRight className="h-3.5 w-3.5" />
+                        </button>
+
+                        {amb.isActive && !amb.isBlocked ? (
+                          <button
+                            type="button"
+                            onClick={() => handleOpenBlockModal(amb)}
+                            title="Block ambassador account and privileges"
+                            className="inline-flex items-center gap-1 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-xs font-semibold text-amber-800 hover:bg-amber-100 transition"
+                          >
+                            <Ban className="h-3.5 w-3.5" />
+                            <span>Block</span>
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => handleUnblock(amb)}
+                            title="Unblock ambassador and restore privileges"
+                            className="inline-flex items-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-xs font-semibold text-emerald-800 hover:bg-emerald-100 transition"
+                          >
+                            <ShieldCheck className="h-3.5 w-3.5" />
+                            <span>Unblock</span>
+                          </button>
+                        )}
+
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(amb)}
+                          title={deleteConfirmId === amb.id ? "Click again to permanently delete" : "Permanently delete account"}
+                          className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition ${
+                            deleteConfirmId === amb.id
+                              ? "bg-rose-700 text-white animate-pulse"
+                              : "border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100"
+                          }`}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                          <span>{deleteConfirmId === amb.id ? "Confirm Delete?" : "Delete"}</span>
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 );
@@ -635,25 +728,42 @@ export default function AdminAmbassadorsDirectoryPage() {
 
               {/* Modal Footer & Account Controls */}
               <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => handleToggleActive(selectedAmbassador)}
-                  className={`inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-semibold transition ${
-                    selectedAmbassador.isActive
-                      ? "border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100"
-                      : "border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
-                  }`}
-                >
-                  {selectedAmbassador.isActive ? (
-                    <>
-                      <ShieldAlert className="h-4 w-4" /> Suspend Ambassador Privileges
-                    </>
+                <div className="flex flex-wrap items-center gap-2">
+                  {selectedAmbassador.isActive && !selectedAmbassador.isBlocked ? (
+                    <button
+                      type="button"
+                      onClick={() => handleOpenBlockModal(selectedAmbassador)}
+                      className="inline-flex items-center gap-1.5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2 text-xs font-semibold text-amber-800 hover:bg-amber-100 transition"
+                    >
+                      <Ban className="h-4 w-4" /> Block Ambassador Account
+                    </button>
                   ) : (
-                    <>
-                      <ShieldCheck className="h-4 w-4" /> Reactivate Ambassador Privileges
-                    </>
+                    <button
+                      type="button"
+                      onClick={() => handleUnblock(selectedAmbassador)}
+                      className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-xs font-semibold text-emerald-800 hover:bg-emerald-100 transition"
+                    >
+                      <ShieldCheck className="h-4 w-4" /> Unblock &amp; Restore Privileges
+                    </button>
                   )}
-                </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(selectedAmbassador)}
+                    className={`inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-semibold transition ${
+                      deleteConfirmId === selectedAmbassador.id
+                        ? "bg-rose-700 text-white animate-pulse"
+                        : "border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100"
+                    }`}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    <span>
+                      {deleteConfirmId === selectedAmbassador.id
+                        ? "Confirm Delete Account Permanently?"
+                        : "Delete Account Permanently"}
+                    </span>
+                  </button>
+                </div>
 
                 <button
                   type="button"
@@ -667,6 +777,64 @@ export default function AdminAmbassadorsDirectoryPage() {
           </div>
         );
       })()}
+
+      {/* Block Ambassador Reason Modal */}
+      {blockModalAmbassador && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4">
+          <div className="relative w-full max-w-md rounded-2xl border border-amber-200 bg-white p-6 shadow-2xl space-y-4">
+            <div className="flex items-center gap-3 text-amber-700">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100">
+                <Ban className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-slate-900">
+                  Block Ambassador Account
+                </h3>
+                <p className="text-xs text-slate-500">
+                  {blockModalAmbassador.fullName} ({blockModalAmbassador.email})
+                </p>
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-600 leading-relaxed">
+              Blocking suspends this ambassador&apos;s referral links, campaigns, and payout privileges immediately. They will receive an urgent in-app notification with the reason you specify below.
+            </p>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-slate-700">
+                Reason for Suspension:
+              </label>
+              <textarea
+                value={blockReasonText}
+                onChange={(e) => setBlockReasonText(e.target.value)}
+                rows={3}
+                placeholder="e.g. Incomplete verification, code of conduct review, or administrative inquiry..."
+                className="w-full rounded-xl border border-slate-300 p-3 text-xs focus:border-amber-500 focus:outline-none"
+              />
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => {
+                  setBlockModalAmbassador(null);
+                  setBlockReasonText("");
+                }}
+                className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmBlock}
+                className="rounded-xl bg-amber-600 px-4 py-2 text-xs font-semibold text-white hover:bg-amber-700 transition"
+              >
+                Confirm Block &amp; Notify
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -4,6 +4,9 @@ import { ensureStateConsistency } from "@/lib/consistency";
 import {
   submitAmbassadorApplicationOp,
   reviewAmbassadorApplicationOp,
+  blockAmbassadorAccountOp,
+  unblockAmbassadorAccountOp,
+  deleteAmbassadorAccountOp,
 } from "@/lib/store-engine";
 
 describe("Approved Ambassador Login & Privileges Healing", () => {
@@ -66,6 +69,7 @@ describe("Approved Ambassador Login & Privileges Healing", () => {
       experience: "Freelance",
       acceptedTerms: true,
       status: "approved",
+      socialLinks: {},
       reviewNotes: "Application approved by administrator.",
       createdAt: new Date().toISOString(),
     });
@@ -115,19 +119,103 @@ describe("Approved Ambassador Login & Privileges Healing", () => {
     expect(isApprovedCheck("applicant", "approved", "approved", false)).toBe(true);
   });
 
-  it("verifies Joy Wambui (joywambo@gmail.com) is seeded and accessible out of the box", () => {
-    const joyProfile = INITIAL_DATABASE_STATE.profiles.find((p) => p.email === "joywambo@gmail.com");
-    expect(joyProfile).toBeDefined();
-    expect(joyProfile!.role).toBe("ambassador");
-    expect(joyProfile!.status).toBe("active");
+  it("verifies ambassador account blocking, unblocking, deletion permanence, and single-email re-application", () => {
+    let state: AppDatabaseState = JSON.parse(JSON.stringify(INITIAL_DATABASE_STATE));
 
-    const joyApp = INITIAL_DATABASE_STATE.applications.find((a) => a.email === "joywambo@gmail.com");
-    expect(joyApp).toBeDefined();
-    expect(joyApp!.status).toBe("approved");
+    // 1. Submit application
+    const { nextState: state1, application, profile } = submitAmbassadorApplicationOp(state, {
+      fullName: "Faith Karimi",
+      email: "faith.karimi@example.com",
+      phone: "0722334455",
+      password: "SecurePassword2026!",
+      county: "Nairobi",
+      institution: "Strathmore University",
+      occupation: "Student",
+      motivation: "Passionate about creative skills",
+      experience: "Campus rep",
+      acceptedTerms: true,
+    });
+    state = state1;
 
-    const joyAmb = INITIAL_DATABASE_STATE.ambassadors.find((a) => a.email === "joywambo@gmail.com");
-    expect(joyAmb).toBeDefined();
-    expect(joyAmb!.isActive).toBe(true);
-    expect(joyAmb!.referralCode).toBe("SCDS-JOY-W789");
+    // Duplicate email application should be rejected
+    expect(() =>
+      submitAmbassadorApplicationOp(state, {
+        fullName: "Faith Karimi Duplicate",
+        email: "faith.karimi@example.com",
+        phone: "0722334455",
+        password: "SecurePassword2026!",
+        county: "Nairobi",
+        institution: "Strathmore University",
+        occupation: "Student",
+        motivation: "Duplicate application",
+        experience: "Campus rep",
+        acceptedTerms: true,
+      })
+    ).toThrow(/already exists/i);
+
+    // 2. Admin approves application
+    const { nextState: state2, ambassador } = reviewAmbassadorApplicationOp(state, {
+      actor: adminActor,
+      applicationId: application.id,
+      decision: "approved",
+    });
+    state = state2;
+    expect(ambassador).toBeDefined();
+    expect(ambassador!.isActive).toBe(true);
+
+    // 3. Admin blocks ambassador account
+    const { nextState: blockedState, ambassador: blockedAmbassador } = blockAmbassadorAccountOp(state, {
+      actor: adminActor,
+      ambassadorId: ambassador!.id,
+      reason: "Compliance review",
+    });
+    expect(blockedAmbassador.isBlocked).toBe(true);
+    expect(blockedAmbassador.isActive).toBe(false);
+    expect(blockedAmbassador.blockReason).toBe("Compliance review");
+
+    const blockedProfile = blockedState.profiles.find((p) => p.email === "faith.karimi@example.com");
+    expect(blockedProfile?.status).toBe("blocked");
+
+    // Notification created for ambassador
+    const blockNotif = blockedState.notifications.find((n: any) => n.userId === profile.id);
+    expect(blockNotif).toBeDefined();
+    expect(blockNotif?.title).toContain("Account Privileges Suspended");
+
+    // 4. Admin unblocks ambassador account
+    const { nextState: unblockedState, ambassador: unblockedAmbassador } = unblockAmbassadorAccountOp(blockedState, {
+      actor: adminActor,
+      ambassadorId: ambassador!.id,
+    });
+    expect(unblockedAmbassador.isBlocked).toBe(false);
+    expect(unblockedAmbassador.isActive).toBe(true);
+
+    const unblockedProfile = unblockedState.profiles.find((p) => p.email === "faith.karimi@example.com");
+    expect(unblockedProfile?.status).toBe("active");
+
+    // 5. Admin permanently deletes ambassador account
+    const { nextState: deletedState } = deleteAmbassadorAccountOp(unblockedState, {
+      actor: adminActor,
+      ambassadorId: ambassador!.id,
+    });
+    expect(deletedState.profiles.some((p: any) => p.email === "faith.karimi@example.com")).toBe(false);
+    expect(deletedState.ambassadors.some((a: any) => a.email === "faith.karimi@example.com")).toBe(false);
+    expect(deletedState.applications.some((app: any) => app.email === "faith.karimi@example.com")).toBe(false);
+
+    // 6. Once permanently deleted, applying again with the same email succeeds!
+    const { nextState: reAppliedState, application: reApp } = submitAmbassadorApplicationOp(deletedState, {
+      fullName: "Faith Karimi Reapplication",
+      email: "faith.karimi@example.com",
+      phone: "0722334455",
+      password: "NewPassword2026!",
+      county: "Nairobi",
+      institution: "Strathmore University",
+      occupation: "Freelancer",
+      motivation: "Re-applying after prior account removal",
+      experience: "Freelance designer",
+      acceptedTerms: true,
+    });
+    expect(reApp).toBeDefined();
+    expect(reApp.email).toBe("faith.karimi@example.com");
+    expect(reAppliedState.applications.some((app: any) => app.id === reApp.id)).toBe(true);
   });
 });

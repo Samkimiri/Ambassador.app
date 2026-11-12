@@ -13,7 +13,8 @@ import {
   buildPayoutDisbursedEmail,
   sendEmail,
 } from "@/lib/email";
-import { INITIAL_DATABASE_STATE } from "@/lib/seed-data";
+import { INITIAL_DATABASE_STATE, AppDatabaseState } from "@/lib/seed-data";
+import { AmbassadorProfile } from "@/types";
 import {
   processPayoutRequestOp,
   requestPayoutOp,
@@ -207,11 +208,39 @@ describe("SCDS Integrations & Security Edge Cases Suite", () => {
     const adminActor = INITIAL_DATABASE_STATE.profiles.find(
       (p) => p.role === "super_admin"
     )!;
-    const ambassador = INITIAL_DATABASE_STATE.ambassadors[0];
+    const ambassador: AmbassadorProfile = {
+      id: "amb-test-payout",
+      userId: "user-test-payout",
+      fullName: "Test Ambassador",
+      email: "payout.test@scdsambassador.co.ke",
+      phone: "0712345678",
+      referralCode: "SCDS-TST-9999",
+      level: "Starter",
+      totalPoints: 1500,
+      availablePoints: 1500,
+      totalCommissionKes: 5000,
+      availableCommissionKes: 5000,
+      paidCommissionKes: 0,
+      payoutMethod: "MPESA",
+      payoutPhone: "0712345678",
+      county: "Nairobi",
+      institution: "UoN",
+      occupation: "Ambassador",
+      bio: "Bio",
+      isActive: true,
+      clickCount: 10,
+      badgeIds: [],
+      createdAt: new Date().toISOString(),
+    };
+
+    const stateWithAmbassador: AppDatabaseState = {
+      ...INITIAL_DATABASE_STATE,
+      ambassadors: [ambassador],
+    };
 
     it("blocks payout requests exceeding ambassador's available balance", () => {
       expect(() =>
-        requestPayoutOp(INITIAL_DATABASE_STATE, {
+        requestPayoutOp(stateWithAmbassador, {
           ambassadorId: ambassador.id,
           amountKes: ambassador.availableCommissionKes + 50_000,
           paymentMethod: "MPESA",
@@ -226,7 +255,7 @@ describe("SCDS Integrations & Security Edge Cases Suite", () => {
 
       // 1. Ambassador requests payout
       const { nextState: stateWithRequest, payoutRequest } = requestPayoutOp(
-        INITIAL_DATABASE_STATE,
+        stateWithAmbassador,
         {
           ambassadorId: ambassador.id,
           amountKes: requestAmount,

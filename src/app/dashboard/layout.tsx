@@ -86,18 +86,82 @@ export default function DashboardLayout({
     );
   }
 
+  // 1. Check if the ambassador account is blocked by admin
+  const isBlocked =
+    currentUser.status === "blocked" ||
+    currentUser.status === "suspended" ||
+    Boolean(currentAmbassador?.isBlocked);
+
+  if (isBlocked && currentUser.role !== "super_admin") {
+    const blockReason =
+      currentAmbassador?.blockReason ||
+      "Administrative review / Policy compliance check";
+
+    return (
+      <div className="min-h-[80vh] flex items-center justify-center px-4 py-12">
+        <div className="max-w-xl w-full rounded-2xl border border-rose-200 bg-white p-8 space-y-5 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-rose-100 text-rose-700">
+              <ShieldAlert className="h-6 w-6" />
+            </div>
+            <div>
+              <span className="text-xs font-semibold uppercase tracking-wider text-rose-700">
+                Account Status: BLOCKED
+              </span>
+              <h1 className="text-xl font-bold text-slate-900">
+                Ambassador Privileges Suspended
+              </h1>
+            </div>
+          </div>
+
+          <p className="text-sm text-slate-600 leading-relaxed">
+            Your ambassador account privileges have been suspended by the administration. While your account is blocked, access to your referral link, marketing tools, and payout requests is disabled.
+          </p>
+
+          <div className="rounded-xl border border-rose-100 bg-rose-50/70 p-4 text-xs space-y-2 text-rose-950">
+            <div>
+              <strong>Reason for Suspension:</strong> {blockReason}
+            </div>
+            <div>
+              <strong>Ambassador:</strong> {currentAmbassador?.fullName || currentUser.fullName} ({currentUser.email})
+            </div>
+            <div>
+              <strong>Support Notice:</strong> If you believe this action was taken in error or have addressed compliance requirements, please reach out to the SCDS administration team.
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-100">
+            <a
+              href="mailto:Samcreativedesignschool@gmail.com?subject=Ambassador%20Account%20Reinstatement%20Request"
+              className="text-xs font-semibold text-brand-600 hover:text-brand-700"
+            >
+              Contact SCDS Support →
+            </a>
+            <button
+              type="button"
+              onClick={handleSignOut}
+              className="rounded-xl border border-slate-300 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition"
+            >
+              Sign Out
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // An ambassador is approved if their application is approved, their role is ambassador/super_admin, their profile status is active/approved, or an active ambassador record exists
   const rawAppStatus = currentApplication?.status || currentUser.status || "pending";
   const appStatus = rawAppStatus.trim().toLowerCase();
   const isApproved =
     currentUser.role === "super_admin" ||
-    currentUser.role === "ambassador" ||
+    (currentUser.role === "ambassador" && currentUser.status !== "blocked") ||
     currentUser.status?.toLowerCase() === "active" ||
     currentUser.status?.toLowerCase() === "approved" ||
     currentApplication?.status?.toLowerCase() === "approved" ||
     appStatus === "approved" ||
     appStatus === "active" ||
-    Boolean(currentAmbassador && currentAmbassador.isActive);
+    Boolean(currentAmbassador && currentAmbassador.isActive && !currentAmbassador.isBlocked);
 
   // If the applicant is not approved (pending, rejected, suspended), show the review status screen
   if (!isApproved) {

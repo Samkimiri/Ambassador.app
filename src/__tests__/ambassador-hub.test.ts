@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { INITIAL_DATABASE_STATE } from "@/lib/seed-data";
+import { INITIAL_DATABASE_STATE, AppDatabaseState } from "@/lib/seed-data";
 import {
   processPayoutRequestOp,
   requestPayoutOp,
@@ -16,14 +16,95 @@ import {
   isValidReferralTransition,
 } from "@/lib/utils";
 import { ambassadorApplicationSchema, learnerEnquirySchema } from "@/lib/validations";
+import { AmbassadorProfile, Profile } from "@/types";
 
 describe("SCDS Ambassador Hub — Core Business Logic & Security Suite", () => {
   const adminActor = INITIAL_DATABASE_STATE.profiles.find(
     (p) => p.role === "super_admin"
   )!;
-  const ambassadorActor = INITIAL_DATABASE_STATE.profiles.find(
-    (p) => p.role === "ambassador"
-  )!;
+
+  const ambassadorActor: Profile = {
+    id: "user-amb-test",
+    email: "amina.wanjiku@students.jkuat.ac.ke",
+    fullName: "Amina Wanjiku",
+    phone: "0712345678",
+    role: "ambassador",
+    status: "active",
+    createdAt: "2026-10-01T08:00:00Z",
+    updatedAt: "2026-10-01T08:00:00Z",
+  };
+
+  const testAmbassador: AmbassadorProfile = {
+    id: "amb-1",
+    userId: "user-amb-test",
+    fullName: "Amina Wanjiku",
+    email: "amina.wanjiku@students.jkuat.ac.ke",
+    phone: "0712345678",
+    referralCode: "SCDS-AMI-8K4P",
+    level: "Silver",
+    totalPoints: 1000,
+    availablePoints: 800,
+    totalCommissionKes: 6000,
+    availableCommissionKes: 4500,
+    paidCommissionKes: 1500,
+    payoutMethod: "MPESA",
+    payoutPhone: "0712345678",
+    county: "Kiambu",
+    institution: "JKUAT",
+    occupation: "Student",
+    bio: "Test ambassador",
+    isActive: true,
+    clickCount: 15,
+    badgeIds: ["badge-1"],
+    createdAt: "2026-10-01T08:00:00Z",
+  };
+
+  const testBaseState: AppDatabaseState = {
+    ...INITIAL_DATABASE_STATE,
+    profiles: [...INITIAL_DATABASE_STATE.profiles, ambassadorActor],
+    ambassadors: [testAmbassador],
+    referrals: [
+      {
+        id: "ref-101",
+        referralCode: "SCDS-AMI-8K4P",
+        ambassadorId: "amb-1",
+        ambassadorName: "Amina Wanjiku",
+        learnerName: "Daniel Kiprop",
+        learnerEmail: "daniel.kiprop@students.jkuat.ac.ke",
+        learnerPhone: "0711223344",
+        learnerCounty: "Kiambu",
+        courseId: "course-cad",
+        courseTitle: "SolidWorks & AutoCAD for Engineers",
+        status: "payment_verified",
+        enquiryNotes: "",
+        consentGiven: true,
+        attributionSource: "direct_link",
+        createdAt: "2026-10-10T10:00:00Z",
+        updatedAt: "2026-10-10T10:00:00Z",
+        events: [],
+      },
+      {
+        id: "ref-103",
+        referralCode: "SCDS-AMI-8K4P",
+        ambassadorId: "amb-1",
+        ambassadorName: "Amina Wanjiku",
+        learnerName: "Sharon Wambui",
+        learnerEmail: "sharon.wambui@gmail.com",
+        learnerPhone: "0722998877",
+        learnerCounty: "Nairobi",
+        courseId: "course-ux",
+        courseTitle: "Vibe Designing — UI/UX Masterclass",
+        campaignId: "camp-vibe-builders",
+        status: "payment_pending",
+        enquiryNotes: "",
+        consentGiven: true,
+        attributionSource: "direct_link",
+        createdAt: "2026-10-15T12:00:00Z",
+        updatedAt: "2026-10-15T12:00:00Z",
+        events: [],
+      },
+    ],
+  };
 
   it("1. Validates Ambassador Application inputs and creates a pending applicant without premature privileges", () => {
     const validInput = {
@@ -49,7 +130,7 @@ describe("SCDS Ambassador Hub — Core Business Logic & Security Suite", () => {
     expect(parsed.success).toBe(true);
 
     const { nextState, application, profile } = submitAmbassadorApplicationOp(
-      INITIAL_DATABASE_STATE,
+      testBaseState,
       validInput
     );
 
@@ -64,7 +145,7 @@ describe("SCDS Ambassador Hub — Core Business Logic & Security Suite", () => {
 
   it("2. Enforces Role-Based Access Control (RBAC): non-admins cannot approve applications", () => {
     expect(() =>
-      reviewAmbassadorApplicationOp(INITIAL_DATABASE_STATE, {
+      reviewAmbassadorApplicationOp(testBaseState, {
         actor: ambassadorActor,
         applicationId: "app-3",
         decision: "approved",
@@ -73,11 +154,27 @@ describe("SCDS Ambassador Hub — Core Business Logic & Security Suite", () => {
   });
 
   it("3. Allows Super Admin to approve an application and generates a unique SCDS referral code", () => {
+    const { nextState: stateWithApp, application } = submitAmbassadorApplicationOp(
+      testBaseState,
+      {
+        fullName: "Kelvin Mwangi",
+        email: "kelvin.mwangi@tuk.ac.ke",
+        phone: "0722334455",
+        password: "Password123!",
+        county: "Nairobi",
+        institution: "Technical University of Kenya",
+        occupation: "Student",
+        motivation: "Empowering tech designers",
+        experience: "Campus leader",
+        acceptedTerms: true,
+      }
+    );
+
     const { nextState, ambassador } = reviewAmbassadorApplicationOp(
-      INITIAL_DATABASE_STATE,
+      stateWithApp,
       {
         actor: adminActor,
-        applicationId: "app-3",
+        applicationId: application.id,
         decision: "approved",
         reviewNotes: "Verified TUK student representative.",
       }
@@ -102,7 +199,7 @@ describe("SCDS Ambassador Hub — Core Business Logic & Security Suite", () => {
   });
 
   it("5. Records referral attribution on learner enquiry and awards qualified lead points", () => {
-    const ambBefore = INITIAL_DATABASE_STATE.ambassadors.find(
+    const ambBefore = testBaseState.ambassadors.find(
       (a) => a.referralCode === "SCDS-AMI-8K4P"
     )!;
 
@@ -121,7 +218,7 @@ describe("SCDS Ambassador Hub — Core Business Logic & Security Suite", () => {
     expect(parsed.success).toBe(true);
 
     const { nextState, referral } = submitLearnerEnquiryOp(
-      INITIAL_DATABASE_STATE,
+      testBaseState,
       enquiry
     );
 
@@ -131,7 +228,7 @@ describe("SCDS Ambassador Hub — Core Business Logic & Security Suite", () => {
     const ambAfter = nextState.ambassadors.find((a) => a.id === ambBefore.id)!;
     expect(ambAfter.totalPoints).toBe(
       ambBefore.totalPoints +
-        INITIAL_DATABASE_STATE.rewardRules.pointsPerQualifiedLead
+        testBaseState.rewardRules.pointsPerQualifiedLead
     );
   });
 
@@ -151,7 +248,7 @@ describe("SCDS Ambassador Hub — Core Business Logic & Security Suite", () => {
     ).toBe(true);
 
     expect(() =>
-      submitLearnerEnquiryOp(INITIAL_DATABASE_STATE, {
+      submitLearnerEnquiryOp(testBaseState, {
         learnerName: "Amina Self",
         learnerEmail: "amina.wanjiku@students.jkuat.ac.ke",
         learnerPhone: "0712345678",
@@ -164,7 +261,7 @@ describe("SCDS Ambassador Hub — Core Business Logic & Security Suite", () => {
 
     // Duplicate learner + course check (Daniel Kiprop is already enrolled in course-cad)
     expect(() =>
-      submitLearnerEnquiryOp(INITIAL_DATABASE_STATE, {
+      submitLearnerEnquiryOp(testBaseState, {
         learnerName: "Daniel Kiprop",
         learnerEmail: "daniel.kiprop@students.jkuat.ac.ke",
         learnerPhone: "0711223344",
@@ -183,7 +280,7 @@ describe("SCDS Ambassador Hub — Core Business Logic & Security Suite", () => {
     );
 
     expect(() =>
-      updateReferralStatusOp(INITIAL_DATABASE_STATE, {
+      updateReferralStatusOp(testBaseState, {
         actor: adminActor,
         referralId: "ref-101", // Already payment_verified
         newStatus: "lead_submitted",
@@ -194,7 +291,7 @@ describe("SCDS Ambassador Hub — Core Business Logic & Security Suite", () => {
   it("8. Verifies enrolment, calculates commission + campaign bonus accurately, and prevents duplicate reward issuance", () => {
     // ref-103 is Sharon Wambui for course-ux (KES 3,500) under camp-vibe-builders (+60 bonus pts, +2% bonus comm)
     const { nextState, commission, pointsIssued } =
-      verifyEnrolmentAndIssueRewardsOp(INITIAL_DATABASE_STATE, {
+      verifyEnrolmentAndIssueRewardsOp(testBaseState, {
         actor: adminActor,
         referralId: "ref-103",
         paymentReference: "QL18TR50KP",
@@ -217,7 +314,7 @@ describe("SCDS Ambassador Hub — Core Business Logic & Security Suite", () => {
   it("9. Enforces minimum payout threshold and requires transaction reference before marking payout as paid", () => {
     // Below minimum threshold (KES 1,000)
     expect(() =>
-      requestPayoutOp(INITIAL_DATABASE_STATE, {
+      requestPayoutOp(testBaseState, {
         ambassadorId: "amb-1",
         amountKes: 500,
         paymentMethod: "MPESA",
@@ -227,7 +324,7 @@ describe("SCDS Ambassador Hub — Core Business Logic & Security Suite", () => {
 
     // Valid payout request
     const { nextState, payoutRequest } = requestPayoutOp(
-      INITIAL_DATABASE_STATE,
+      testBaseState,
       {
         ambassadorId: "amb-1",
         amountKes: 1500,
