@@ -19,6 +19,7 @@ import {
   SupportRequest,
 } from "@/types";
 import {
+  deleteAmbassadorApplicationOp,
   processPayoutRequestOp,
   recordReferralClickOp,
   requestPayoutOp,
@@ -64,6 +65,7 @@ interface AppContextValue {
     decision: "approved" | "rejected" | "suspended",
     reviewNotes?: string
   ) => void;
+  deleteApplication: (applicationId: string) => Promise<void>;
   submitLearnerEnquiry: (
     input: Parameters<typeof submitLearnerEnquiryOp>[1]
   ) => Referral;
@@ -134,13 +136,43 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   // Ref to active Supabase Realtime Channel
   const realtimeChannelRef = useRef<RealtimeChannel | null>(null);
 
-  // Intelligent state merger: applies fresh database state while protecting any pending local creations
+  // Intelligent state merger: applies fresh database state while protecting approved status and deletions
   const applyServerState = (serverDb: AppDatabaseState) => {
     if (!serverDb || !Array.isArray(serverDb.applications)) return;
 
     setDb((prev) => {
-      const appMap = new Map(serverDb.applications.map((a) => [a.id, a]));
+      const deletedSet = new Set([
+        ...(prev.deletedApplicationIds || []),
+        ...(serverDb.deletedApplicationIds || []),
+      ]);
+
+      const appMap = new Map<string, AmbassadorApplication>();
+
+      // 1. Process server applications, protecting local reviews and filtering deletions
+      for (const sApp of serverDb.applications) {
+        if (deletedSet.has(sApp.id)) continue;
+        const localApp = prev.applications.find((a) => a.id === sApp.id);
+        if (localApp) {
+          // If locally approved, KEEP APPROVED! Never downgrade approved status to pending
+          if (localApp.status === "approved" && sApp.status === "pending") {
+            appMap.set(sApp.id, { ...sApp, ...localApp, status: "approved" });
+            continue;
+          }
+          // If locally reviewed more recently, preserve local review
+          if (
+            localApp.reviewedAt &&
+            (!sApp.reviewedAt || new Date(localApp.reviewedAt) > new Date(sApp.reviewedAt))
+          ) {
+            appMap.set(sApp.id, { ...sApp, ...localApp });
+            continue;
+          }
+        }
+        appMap.set(sApp.id, sApp);
+      }
+
+      // 2. Add any local applications that are not yet on the server (and not deleted)
       for (const localApp of prev.applications) {
+        if (deletedSet.has(localApp.id)) continue;
         if (!appMap.has(localApp.id)) {
           appMap.set(localApp.id, localApp);
         }
@@ -181,16 +213,17 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         ambassadors: Array.from(ambMap.values()),
         referrals: Array.from(refMap.values()),
         payoutRequests: Array.from(payoutMap.values()),
+        deletedApplicationIds: Array.from(deletedSet),
       };
 
-      return ensureStateConsistency(mergedState);
+      const consistent = ensureStateConsistency(mergedState);
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(consistent));
+      } catch {
+        // Ignore quota errors
+      }
+      return consistent;
     });
-
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(serverDb));
-    } catch {
-      // Ignore quota errors
-    }
   };
 
   // Sync state on demand from /api/sync
@@ -598,6 +631,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     await broadcastDbChange(nextState);
   };
 
+  const deleteApplication = async (applicationId: string) => {
+    if (!currentUser) throw new Error("Not signed in.");
+    const { nextState } = deleteAmbassadorApplicationOp(db, {
+      actor: currentUser,
+      applicationId,
+    });
+    await broadcastDbChange(nextState);
+  };
+
   const submitLearnerEnquiry = (
     input: Parameters<typeof submitLearnerEnquiryOp>[1]
   ) => {
@@ -911,6 +953,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         captureReferralCode,
         submitApplication,
         reviewApplication,
+        deleteApplication,
         submitLearnerEnquiry,
         updateReferralStatus,
         verifyEnrolment,

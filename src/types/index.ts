@@ -65,6 +65,14 @@ export interface AmbassadorApplication {
   county: string;
   institution: string;
   occupation: string;
+  academicYear?: string;
+  studyField?: string;
+  audienceSize?: string;
+  weeklyHours?: string;
+  deviceReadiness?: string;
+  familiarTools?: string[];
+  pastAmbassadorExperience?: string;
+  resumeUrl?: string;
   socialLinks: AmbassadorSocialLinks;
   promotionStrategy?: string;
   targetAudience?: string;

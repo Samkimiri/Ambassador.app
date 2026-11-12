@@ -16,7 +16,9 @@ export function ensureStateConsistency(state: AppDatabaseState): AppDatabaseStat
 
   const profiles: Profile[] = Array.isArray(state.profiles) ? [...state.profiles] : [];
   const ambassadors: AmbassadorProfile[] = Array.isArray(state.ambassadors) ? [...state.ambassadors] : [];
-  const applications = Array.isArray(state.applications) ? [...state.applications] : [];
+  const deletedSet = new Set(state.deletedApplicationIds || []);
+  const rawApplications = Array.isArray(state.applications) ? [...state.applications] : [];
+  const applications = rawApplications.filter((a) => !deletedSet.has(a.id));
 
   // 1. Ensure Super Admin profile always exists and has valid credentials
   const adminIdx = profiles.findIndex(
@@ -61,6 +63,17 @@ export function ensureStateConsistency(state: AppDatabaseState): AppDatabaseStat
         updatedAt: now,
       };
       profiles.unshift(userProfile);
+    }
+
+    // Once an application is approved (or applicant is already an active ambassador),
+    // lock in the approved status so demo reloads or state syncs never revert to "pending"
+    const hasActiveAmb = ambassadors.some(
+      (a) =>
+        (a.userId && a.userId === userProfile!.id) ||
+        a.email.toLowerCase() === cleanEmail && a.isActive
+    );
+    if ((hasActiveAmb || userProfile.role === "ambassador") && app.status !== "rejected" && app.status !== "suspended") {
+      app.status = "approved";
     }
 
     // If application is approved, make sure profile is active ambassador and ambassador profile exists
@@ -130,5 +143,6 @@ export function ensureStateConsistency(state: AppDatabaseState): AppDatabaseStat
     profiles,
     ambassadors,
     applications,
+    deletedApplicationIds: Array.from(deletedSet),
   };
 }

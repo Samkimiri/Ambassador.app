@@ -36,6 +36,7 @@ export interface AppDatabaseState {
   notifications: AppNotification[];
   supportRequests: SupportRequest[];
   auditLogs: AuditLog[];
+  deletedApplicationIds?: string[];
 }
 
 export const INITIAL_REWARD_RULES: RewardRuleConfig = {
@@ -426,10 +427,20 @@ export const INITIAL_DATABASE_STATE: AppDatabaseState = {
       county: "Kiambu / Juja",
       institution: "Jomo Kenyatta University of Agriculture and Technology (JKUAT)",
       occupation: "University Student (BSc Mechanical Engineering)",
+      academicYear: "Year 3 Undergraduate",
+      studyField: "Mechanical Engineering & CAD",
+      audienceSize: "1,500+ peers (JKUAT Engineering Club & NUSETA)",
+      weeklyHours: "8 - 12 hrs/week",
+      deviceReadiness: "High-Performance Laptop (Core i7) + Smartphone with Campus Wi-Fi & 4G",
+      familiarTools: ["Adobe Photoshop", "Adobe Illustrator", "SolidWorks 3D CAD"],
+      pastAmbassadorExperience: "Lead Organizer for JKUAT Tech Week & NUSETA Design Rep",
+      resumeUrl: "https://drive.google.com/scds-ambassador-cv/amina-wanjiku.pdf",
       socialLinks: {
         instagram: "https://instagram.com/amina_designs_ke",
         linkedin: "https://linkedin.com/in/aminawanjiku",
       },
+      promotionStrategy: "WhatsApp Student Groups, Engineering Tech Week & Class Rep Broadcasts",
+      targetAudience: "Engineering, architecture, and design undergraduates",
       motivation:
         "Having completed SCDS Photoshop and SolidWorks training, my classmates constantly ask how I built my engineering CAD and design portfolio.",
       experience:
@@ -450,10 +461,20 @@ export const INITIAL_DATABASE_STATE: AppDatabaseState = {
       county: "Nairobi",
       institution: "University of Nairobi (UoN)",
       occupation: "Digital Creator & Student",
+      academicYear: "Year 4 Undergraduate",
+      studyField: "Computer Science & Interactive Media",
+      audienceSize: "8,500+ TikTok & tech community followers",
+      weeklyHours: "10 - 15 hrs/week",
+      deviceReadiness: "MacBook Pro + iPhone 13 + High-Speed Fiber Internet",
+      familiarTools: ["Vibe Coding (Web Dev)", "UI/UX (Figma)", "CapCut Video Editing"],
+      pastAmbassadorExperience: "Campus Ambassador for Nairobi DevFest 2025",
+      resumeUrl: "https://drive.google.com/scds-ambassador-cv/brian-otieno.pdf",
       socialLinks: {
         tiktok: "https://tiktok.com/@brian_vibe_code",
         portfolio: "https://brianotieno.dev",
       },
+      promotionStrategy: "TikTok Short Tutorials, Coding TikTok Demos & Discord Community",
+      targetAudience: "Tech, coding, and web development students in Nairobi",
       motivation:
         "I want to introduce UoN computing and design clubs to SCDS Vibe Coding and UI/UX practical classes.",
       experience:
@@ -474,10 +495,20 @@ export const INITIAL_DATABASE_STATE: AppDatabaseState = {
       county: "Nairobi",
       institution: "Technical University of Kenya (TUK)",
       occupation: "University Student (Graphic Design & Multimedia)",
+      academicYear: "Year 2 Undergraduate",
+      studyField: "Graphic Design, Typography & Multimedia",
+      audienceSize: "600+ design classmates & TUK WhatsApp student groups",
+      weeklyHours: "6 - 10 hrs/week",
+      deviceReadiness: "HP Pavilion Laptop + Android Smartphone with Safaricom 4G",
+      familiarTools: ["Adobe Photoshop", "Adobe Illustrator", "CapCut Video Editing"],
+      pastAmbassadorExperience: "TUK Creative Hub Social Media Coordinator & Class Rep",
+      resumeUrl: "https://behance.net/kelvinmwangi",
       socialLinks: {
         instagram: "https://instagram.com/kelvin_visuals",
         portfolio: "https://behance.net/kelvinmwangi",
       },
+      promotionStrategy: "TUK Class WhatsApp Groups, Physical Poster Prints & Peer 1-on-1s",
+      targetAudience: "First & second year multimedia and fine arts students",
       motivation:
         "Many first- and second-year students at TUK want practical software mentorship in Illustrator, Photoshop, and CapCut at an affordable student fee.",
       experience:
@@ -495,9 +526,19 @@ export const INITIAL_DATABASE_STATE: AppDatabaseState = {
       county: "Nakuru",
       institution: "Egerton University",
       occupation: "Campus Representative & Freelance Marketer",
+      academicYear: "Year 3 Undergraduate",
+      studyField: "Business Commerce & Digital Marketing",
+      audienceSize: "1,100+ students across Egerton University faculties",
+      weeklyHours: "8 - 12 hrs/week",
+      deviceReadiness: "Dell Latitude Laptop + Samsung Galaxy Smartphone",
+      familiarTools: ["AI & Prompt Engineering", "CapCut Video Editing", "Digital Marketing"],
+      pastAmbassadorExperience: "Brand Ambassador for 2 Rift Valley Ed-Tech Bootcamps",
+      resumeUrl: "https://linkedin.com/in/mercychebet",
       socialLinks: {
         linkedin: "https://linkedin.com/in/mercychebet",
       },
+      promotionStrategy: "Hostel WhatsApp Channels, Business Club Meetups & Peer Word-of-Mouth",
+      targetAudience: "Commerce, business, and non-technical students seeking digital skills",
       motivation:
         "Students in Nakuru love SCDS online LMS + Google Meet mentorship because they can learn from anywhere with structured assignments.",
       experience:
@@ -1235,5 +1276,6 @@ export const INITIAL_DATABASE_STATE: AppDatabaseState = {
       createdAt: "2026-10-15T11:30:00Z",
     },
   ],
+  deletedApplicationIds: [],
 };
 

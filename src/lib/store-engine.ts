@@ -42,6 +42,14 @@ export function submitAmbassadorApplicationOp(
     county: string;
     institution: string;
     occupation: string;
+    academicYear?: string;
+    studyField?: string;
+    audienceSize?: string;
+    weeklyHours?: string;
+    deviceReadiness?: string;
+    familiarTools?: string[];
+    pastAmbassadorExperience?: string;
+    resumeUrl?: string;
     instagram?: string;
     linkedin?: string;
     tiktok?: string;
@@ -87,6 +95,14 @@ export function submitAmbassadorApplicationOp(
     county: input.county.trim(),
     institution: input.institution.trim(),
     occupation: input.occupation.trim(),
+    academicYear: input.academicYear?.trim() || undefined,
+    studyField: input.studyField?.trim() || undefined,
+    audienceSize: input.audienceSize?.trim() || undefined,
+    weeklyHours: input.weeklyHours?.trim() || undefined,
+    deviceReadiness: input.deviceReadiness?.trim() || undefined,
+    familiarTools: input.familiarTools?.length ? input.familiarTools : undefined,
+    pastAmbassadorExperience: input.pastAmbassadorExperience?.trim() || undefined,
+    resumeUrl: input.resumeUrl?.trim() || undefined,
     socialLinks: {
       instagram: input.instagram?.trim() || undefined,
       linkedin: input.linkedin?.trim() || undefined,
@@ -296,6 +312,66 @@ export function reviewAmbassadorApplicationOp(
       auditLogs: [audit, ...state.auditLogs],
     },
     ambassador: createdAmbassador,
+  };
+}
+
+export function deleteAmbassadorApplicationOp(
+  state: AppDatabaseState,
+  params: {
+    actor: Profile;
+    applicationId: string;
+  }
+): { nextState: AppDatabaseState; deletedApp: AmbassadorApplication } {
+  if (params.actor.role !== "super_admin") {
+    throw new Error("Unauthorized: Only Super Administrators can delete applications.");
+  }
+
+  const app = state.applications.find((a) => a.id === params.applicationId);
+  if (!app) {
+    throw new Error("Application not found.");
+  }
+
+  const now = new Date().toISOString();
+  const nextApplications = state.applications.filter((a) => a.id !== params.applicationId);
+  const deletedIds = Array.from(
+    new Set([...(state.deletedApplicationIds || []), params.applicationId])
+  );
+
+  // If this applicant has never earned commissions or referred verified students, clean up their learner profile
+  const hasReferrals = state.referrals.some(
+    (r) =>
+      r.ambassadorId === app.userId ||
+      (app.email && r.referralCode.toLowerCase() === app.email.toLowerCase())
+  );
+  const nextProfiles = hasReferrals
+    ? state.profiles
+    : state.profiles.filter(
+        (p) =>
+          p.id !== app.userId &&
+          p.email.toLowerCase() !== app.email.toLowerCase()
+      );
+
+  const audit: AuditLog = {
+    id: `audit-${Date.now()}-del`,
+    actorId: params.actor.id,
+    actorEmail: params.actor.email,
+    actorRole: params.actor.role,
+    action: "APPLICATION_DELETED",
+    entityType: "ambassador_application",
+    entityId: app.id,
+    summary: `${params.actor.fullName} permanently deleted application #${app.id.slice(-6).toUpperCase()} for ${app.fullName} (${app.email}).`,
+    createdAt: now,
+  };
+
+  return {
+    nextState: {
+      ...state,
+      applications: nextApplications,
+      profiles: nextProfiles,
+      deletedApplicationIds: deletedIds,
+      auditLogs: [audit, ...state.auditLogs],
+    },
+    deletedApp: app,
   };
 }
 

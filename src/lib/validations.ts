@@ -29,6 +29,14 @@ export const ambassadorApplicationSchema = z.object({
   occupation: z
     .string()
     .min(2, "Please select your current occupation or student status."),
+  academicYear: z.string().optional().default(""),
+  studyField: z.string().optional().default(""),
+  audienceSize: z.string().optional().default("100 - 500 peers"),
+  weeklyHours: z.string().optional().default("5 - 10 hrs/week"),
+  deviceReadiness: z.string().optional().default("Laptop & Smartphone"),
+  familiarTools: z.array(z.string()).optional().default([]),
+  pastAmbassadorExperience: z.string().optional().default(""),
+  resumeUrl: z.string().optional().default(""),
   instagram: z.string().optional().default(""),
   linkedin: z.string().optional().default(""),
   tiktok: z.string().optional().default(""),
