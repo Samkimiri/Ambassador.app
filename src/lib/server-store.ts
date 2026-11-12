@@ -51,6 +51,28 @@ export function mergeDatabaseStates(
     ...(currentDb.deletedUserIds || []),
     ...(incomingDb.deletedUserIds || []),
   ]);
+  const deletedEntitySet = new Set([
+    ...(currentDb.deletedEntityIds || []),
+    ...(incomingDb.deletedEntityIds || []),
+  ]);
+  const deletedTrashSet = new Set([
+    ...(currentDb.deletedTrashIds || []),
+    ...(incomingDb.deletedTrashIds || []),
+  ]);
+
+  // 0. Trash: union excluding permanently purged/restored trash items
+  const trashMap = new Map<string, TrashItem>();
+  for (const t of currentDb.trash || []) {
+    if (!deletedTrashSet.has(t.id) && !deletedEntitySet.has(t.entityId)) {
+      trashMap.set(t.id, t);
+    }
+  }
+  for (const t of incomingDb.trash || []) {
+    if (!deletedTrashSet.has(t.id) && !deletedEntitySet.has(t.entityId) && !trashMap.has(t.id)) {
+      trashMap.set(t.id, t);
+    }
+  }
+  const trashedEntitySet = new Set(Array.from(trashMap.values()).map((t) => t.entityId));
 
   // 1. Applications: union of all non-deleted applications
   const appMap = new Map<string, AmbassadorApplication>();
@@ -143,10 +165,16 @@ export function mergeDatabaseStates(
     }
   }
 
+  const isLiveEntity = (id: string) =>
+    !deletedEntitySet.has(id) && !trashedEntitySet.has(id);
+
   // 4. Referrals
   const refMap = new Map<string, Referral>();
-  for (const r of currentDb.referrals || []) refMap.set(r.id, r);
+  for (const r of currentDb.referrals || []) {
+    if (isLiveEntity(r.id)) refMap.set(r.id, r);
+  }
   for (const r of incomingDb.referrals || []) {
+    if (!isLiveEntity(r.id)) continue;
     if (!refMap.has(r.id)) {
       refMap.set(r.id, r);
     } else {
@@ -156,8 +184,11 @@ export function mergeDatabaseStates(
 
   // 5. Enrolments
   const enrMap = new Map<string, Enrolment>();
-  for (const e of currentDb.enrolments || []) enrMap.set(e.id, e);
+  for (const e of currentDb.enrolments || []) {
+    if (isLiveEntity(e.id)) enrMap.set(e.id, e);
+  }
   for (const e of incomingDb.enrolments || []) {
+    if (!isLiveEntity(e.id)) continue;
     if (!enrMap.has(e.id)) {
       enrMap.set(e.id, e);
     } else {
@@ -167,8 +198,11 @@ export function mergeDatabaseStates(
 
   // 6. Payout requests
   const payMap = new Map<string, PayoutRequest>();
-  for (const pr of currentDb.payoutRequests || []) payMap.set(pr.id, pr);
+  for (const pr of currentDb.payoutRequests || []) {
+    if (isLiveEntity(pr.id)) payMap.set(pr.id, pr);
+  }
   for (const pr of incomingDb.payoutRequests || []) {
+    if (!isLiveEntity(pr.id)) continue;
     if (!payMap.has(pr.id)) {
       payMap.set(pr.id, pr);
     } else {
@@ -176,25 +210,24 @@ export function mergeDatabaseStates(
     }
   }
 
-  // 7. Trash
-  const trashMap = new Map<string, TrashItem>();
-  for (const t of currentDb.trash || []) trashMap.set(t.id, t);
-  for (const t of incomingDb.trash || []) {
-    if (!trashMap.has(t.id)) trashMap.set(t.id, t);
-  }
-
   const merged: AppDatabaseState = {
     ...currentDb,
     ...incomingDb,
-    applications: Array.from(appMap.values()),
+    applications: Array.from(appMap.values()).filter((a) => isLiveEntity(a.id)),
     profiles: Array.from(profileMap.values()),
-    ambassadors: Array.from(ambMap.values()),
+    ambassadors: Array.from(ambMap.values()).filter((a) => isLiveEntity(a.id)),
     referrals: Array.from(refMap.values()),
     enrolments: Array.from(enrMap.values()),
     payoutRequests: Array.from(payMap.values()),
+    courses: (incomingDb.courses || currentDb.courses || []).filter((c) => isLiveEntity(c.id)),
+    campaigns: (incomingDb.campaigns || currentDb.campaigns || []).filter((c) => isLiveEntity(c.id)),
+    marketingAssets: (incomingDb.marketingAssets || currentDb.marketingAssets || []).filter((m) => isLiveEntity(m.id)),
+    announcements: (incomingDb.announcements || currentDb.announcements || []).filter((a) => isLiveEntity(a.id)),
     trash: Array.from(trashMap.values()),
     deletedApplicationIds: Array.from(deletedAppSet),
     deletedUserIds: Array.from(deletedUserSet),
+    deletedEntityIds: Array.from(deletedEntitySet),
+    deletedTrashIds: Array.from(deletedTrashSet),
   };
 
   return ensureStateConsistency(merged);

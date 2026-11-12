@@ -39,6 +39,8 @@ export interface AppDatabaseState {
   auditLogs: AuditLog[];
   deletedApplicationIds?: string[];
   deletedUserIds?: string[];
+  deletedEntityIds?: string[];
+  deletedTrashIds?: string[];
   trash?: TrashItem[];
 }
 
@@ -491,5 +493,7 @@ export const INITIAL_DATABASE_STATE: AppDatabaseState = {
   auditLogs: [],
   deletedApplicationIds: [],
   deletedUserIds: [],
+  deletedEntityIds: [],
+  deletedTrashIds: [],
   trash: [],
 };

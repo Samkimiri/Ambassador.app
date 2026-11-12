@@ -187,6 +187,33 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         ...(prev.deletedUserIds || []),
         ...(serverDb.deletedUserIds || []),
       ]);
+      const deletedEntitySet = new Set([
+        ...(prev.deletedEntityIds || []),
+        ...(serverDb.deletedEntityIds || []),
+      ]);
+      const deletedTrashSet = new Set([
+        ...(prev.deletedTrashIds || []),
+        ...(serverDb.deletedTrashIds || []),
+      ]);
+
+      const trashMap = new Map<string, TrashItem>();
+      for (const t of serverDb.trash || []) {
+        if (!deletedTrashSet.has(t.id) && !deletedEntitySet.has(t.entityId)) {
+          trashMap.set(t.id, t);
+        }
+      }
+      for (const localTrash of prev.trash || []) {
+        if (
+          !deletedTrashSet.has(localTrash.id) &&
+          !deletedEntitySet.has(localTrash.entityId) &&
+          !trashMap.has(localTrash.id)
+        ) {
+          trashMap.set(localTrash.id, localTrash);
+        }
+      }
+      const trashedEntitySet = new Set(Array.from(trashMap.values()).map((t) => t.entityId));
+      const isLiveEntity = (id: string) =>
+        !deletedEntitySet.has(id) && !trashedEntitySet.has(id);
 
       const appMap = new Map<string, AmbassadorApplication>();
 
@@ -244,37 +271,40 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         }
       }
 
-      const refMap = new Map(serverDb.referrals.map((r) => [r.id, r]));
+      const refMap = new Map(
+        (serverDb.referrals || []).filter((r) => isLiveEntity(r.id)).map((r) => [r.id, r])
+      );
       for (const localRef of prev.referrals) {
-        if (!refMap.has(localRef.id)) {
+        if (isLiveEntity(localRef.id) && !refMap.has(localRef.id)) {
           refMap.set(localRef.id, localRef);
         }
       }
 
-      const payoutMap = new Map((serverDb.payoutRequests || []).map((p) => [p.id, p]));
+      const payoutMap = new Map(
+        (serverDb.payoutRequests || []).filter((p) => isLiveEntity(p.id)).map((p) => [p.id, p])
+      );
       for (const localPayout of prev.payoutRequests || []) {
-        if (!payoutMap.has(localPayout.id)) {
+        if (isLiveEntity(localPayout.id) && !payoutMap.has(localPayout.id)) {
           payoutMap.set(localPayout.id, localPayout);
-        }
-      }
-
-      const trashMap = new Map((serverDb.trash || []).map((t) => [t.id, t]));
-      for (const localTrash of prev.trash || []) {
-        if (!trashMap.has(localTrash.id)) {
-          trashMap.set(localTrash.id, localTrash);
         }
       }
 
       const mergedState: AppDatabaseState = {
         ...serverDb,
-        applications: Array.from(appMap.values()),
+        applications: Array.from(appMap.values()).filter((a) => isLiveEntity(a.id)),
         profiles: Array.from(profileMap.values()),
-        ambassadors: Array.from(ambMap.values()),
+        ambassadors: Array.from(ambMap.values()).filter((a) => isLiveEntity(a.id)),
         referrals: Array.from(refMap.values()),
         payoutRequests: Array.from(payoutMap.values()),
+        courses: (serverDb.courses || prev.courses || []).filter((c) => isLiveEntity(c.id)),
+        campaigns: (serverDb.campaigns || prev.campaigns || []).filter((c) => isLiveEntity(c.id)),
+        marketingAssets: (serverDb.marketingAssets || prev.marketingAssets || []).filter((m) => isLiveEntity(m.id)),
+        announcements: (serverDb.announcements || prev.announcements || []).filter((a) => isLiveEntity(a.id)),
         trash: Array.from(trashMap.values()),
         deletedApplicationIds: Array.from(deletedAppSet),
         deletedUserIds: Array.from(deletedUserSet),
+        deletedEntityIds: Array.from(deletedEntitySet),
+        deletedTrashIds: Array.from(deletedTrashSet),
       };
 
       const consistent = ensureStateConsistency(mergedState);

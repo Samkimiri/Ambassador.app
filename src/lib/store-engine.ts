@@ -1590,6 +1590,15 @@ export function restoreFromTrashOp(
     }
   }
 
+  nextState.deletedTrashIds = Array.from(
+    new Set([...(state.deletedTrashIds || []), trashItem.id])
+  );
+  if (nextState.deletedEntityIds) {
+    nextState.deletedEntityIds = nextState.deletedEntityIds.filter(
+      (id) => id !== trashItem.entityId
+    );
+  }
+
   const audit: AuditLog = {
     id: `audit-${Date.now()}-restore`,
     actorId: params.actor.id,
@@ -1623,8 +1632,10 @@ export function deletePermanentlyFromTrashOp(
     throw new Error("Item not found in trash.");
   }
 
-  let deletedUserIds = state.deletedUserIds ? [...state.deletedUserIds] : [];
-  let deletedAppIds = state.deletedApplicationIds ? [...state.deletedApplicationIds] : [];
+  const deletedUserIds = state.deletedUserIds ? [...state.deletedUserIds] : [];
+  const deletedAppIds = state.deletedApplicationIds ? [...state.deletedApplicationIds] : [];
+  const deletedEntityIds = state.deletedEntityIds ? [...state.deletedEntityIds, trashItem.entityId] : [trashItem.entityId];
+  const deletedTrashIds = state.deletedTrashIds ? [...state.deletedTrashIds, trashItem.id] : [trashItem.id];
 
   if (trashItem.entityType === "application") {
     deletedAppIds.push(trashItem.entityId);
@@ -1632,6 +1643,11 @@ export function deletePermanentlyFromTrashOp(
     deletedUserIds.push(trashItem.entityId);
     if (trashItem.payload?.ambassador?.userId) {
       deletedUserIds.push(trashItem.payload.ambassador.userId);
+    }
+    if (Array.isArray(trashItem.payload?.applications)) {
+      for (const app of trashItem.payload.applications) {
+        if (app?.id) deletedAppIds.push(app.id);
+      }
     }
   }
 
@@ -1653,6 +1669,8 @@ export function deletePermanentlyFromTrashOp(
       trash: (state.trash || []).filter((t) => t.id !== params.trashId),
       deletedApplicationIds: Array.from(new Set(deletedAppIds)),
       deletedUserIds: Array.from(new Set(deletedUserIds)),
+      deletedEntityIds: Array.from(new Set(deletedEntityIds)),
+      deletedTrashIds: Array.from(new Set(deletedTrashIds)),
       auditLogs: [audit, ...state.auditLogs],
     },
     purgedItem: trashItem,
@@ -1682,6 +1700,29 @@ export function emptyTrashOp(
     ? currentTrash.filter((t) => t.entityType !== params.entityType)
     : [];
 
+  const deletedUserIds = state.deletedUserIds ? [...state.deletedUserIds] : [];
+  const deletedAppIds = state.deletedApplicationIds ? [...state.deletedApplicationIds] : [];
+  const deletedEntityIds = state.deletedEntityIds ? [...state.deletedEntityIds] : [];
+  const deletedTrashIds = state.deletedTrashIds ? [...state.deletedTrashIds] : [];
+
+  for (const item of toDelete) {
+    deletedTrashIds.push(item.id);
+    deletedEntityIds.push(item.entityId);
+    if (item.entityType === "application") {
+      deletedAppIds.push(item.entityId);
+    } else if (item.entityType === "ambassador") {
+      deletedUserIds.push(item.entityId);
+      if (item.payload?.ambassador?.userId) {
+        deletedUserIds.push(item.payload.ambassador.userId);
+      }
+      if (Array.isArray(item.payload?.applications)) {
+        for (const app of item.payload.applications) {
+          if (app?.id) deletedAppIds.push(app.id);
+        }
+      }
+    }
+  }
+
   const audit: AuditLog = {
     id: `audit-${Date.now()}-empty-trash`,
     actorId: params.actor.id,
@@ -1698,6 +1739,10 @@ export function emptyTrashOp(
     nextState: {
       ...state,
       trash: remainingTrash,
+      deletedApplicationIds: Array.from(new Set(deletedAppIds)),
+      deletedUserIds: Array.from(new Set(deletedUserIds)),
+      deletedEntityIds: Array.from(new Set(deletedEntityIds)),
+      deletedTrashIds: Array.from(new Set(deletedTrashIds)),
       auditLogs: [audit, ...state.auditLogs],
     },
     count,
@@ -1710,15 +1755,25 @@ export function purgeExpiredTrashOp(state: AppDatabaseState): {
 } {
   const currentTrash = state.trash || [];
   const now = Date.now();
+  const expired = currentTrash.filter((t) => new Date(t.expiresAt).getTime() <= now);
   const unexpired = currentTrash.filter((t) => new Date(t.expiresAt).getTime() > now);
-  const purgedCount = currentTrash.length - unexpired.length;
+  const purgedCount = expired.length;
 
   if (purgedCount === 0) return { nextState: state, purgedCount: 0 };
+
+  const deletedTrashIds = Array.from(
+    new Set([...(state.deletedTrashIds || []), ...expired.map((t) => t.id)])
+  );
+  const deletedEntityIds = Array.from(
+    new Set([...(state.deletedEntityIds || []), ...expired.map((t) => t.entityId)])
+  );
 
   return {
     nextState: {
       ...state,
       trash: unexpired,
+      deletedTrashIds,
+      deletedEntityIds,
     },
     purgedCount,
   };

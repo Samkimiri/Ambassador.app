@@ -6,6 +6,7 @@ import {
   deletePermanentlyFromTrashOp,
   emptyTrashOp,
   purgeExpiredTrashOp,
+  submitAmbassadorApplicationOp,
   deleteCourseOp,
   deleteCampaignOp,
   deleteReferralOp,
@@ -16,6 +17,7 @@ import {
   TRASH_RETENTION_MS,
 } from "@/lib/store-engine";
 import { ensureStateConsistency } from "@/lib/consistency";
+import { mergeDatabaseStates } from "@/lib/server-store";
 import { Profile, TrashItem } from "@/types";
 
 const adminActor: Profile = {
@@ -212,5 +214,147 @@ describe("Trash Platform & 48-Hour Data Retention Management", () => {
         trashId: "any-id",
       });
     }).toThrow(/Unauthorized/);
+  });
+
+  it("8. Purges pre-existing records for Kinyuam047@gmail.com and mathewatambo629@gmail.com while allowing new applications", () => {
+    const oldTimestamp = "2026-11-10T10:00:00.000Z";
+    const legacyState = {
+      ...INITIAL_DATABASE_STATE,
+      profiles: [
+        ...INITIAL_DATABASE_STATE.profiles,
+        {
+          id: "user-kinyua-old",
+          email: "kinyuam047@gmail.com",
+          fullName: "Kinyua Old",
+          role: "ambassador" as const,
+          status: "active" as const,
+          createdAt: oldTimestamp,
+          updatedAt: oldTimestamp,
+        },
+        {
+          id: "user-mathew-old",
+          email: "mathewatambo629@gmail.com",
+          fullName: "Mathew Old",
+          role: "learner" as const,
+          status: "pending" as const,
+          createdAt: oldTimestamp,
+          updatedAt: oldTimestamp,
+        },
+      ],
+      applications: [
+        {
+          id: "app-kinyua-old",
+          userId: "user-kinyua-old",
+          fullName: "Kinyua Old",
+          email: "Kinyuam047@gmail.com",
+          phone: "0711111111",
+          county: "Nairobi",
+          institution: "UON",
+          occupation: "Student",
+          motivation: "Old motivation",
+          experience: "Old experience",
+          acceptedTerms: true,
+          status: "approved" as const,
+          createdAt: oldTimestamp,
+        },
+      ],
+    };
+
+    const cleaned = ensureStateConsistency(legacyState);
+    expect(cleaned.profiles.some((p) => p.email.toLowerCase() === "kinyuam047@gmail.com")).toBe(false);
+    expect(cleaned.profiles.some((p) => p.email.toLowerCase() === "mathewatambo629@gmail.com")).toBe(false);
+    expect(cleaned.applications.some((a) => a.email.toLowerCase() === "kinyuam047@gmail.com")).toBe(false);
+
+    // Now both emails can submit brand-new applications!
+    const { nextState: afterKinyua, application: newKinyuaApp } = submitAmbassadorApplicationOp(cleaned, {
+      fullName: "Kinyua New",
+      email: "Kinyuam047@gmail.com",
+      phone: "0711111111",
+      password: "Password123!",
+      county: "Nairobi",
+      institution: "UON",
+      occupation: "Student",
+      motivation: "Fresh new application for SCDS ambassador program",
+      experience: "Campus marketing and design",
+      acceptedTerms: true,
+    });
+
+    const { nextState: afterMathew, application: newMathewApp } = submitAmbassadorApplicationOp(afterKinyua, {
+      fullName: "Mathew New",
+      email: "mathewatambo629@gmail.com",
+      phone: "0722222222",
+      password: "Password123!",
+      county: "Nairobi",
+      institution: "JKUAT",
+      occupation: "Student",
+      motivation: "Fresh new application for SCDS ambassador program",
+      experience: "Campus leadership and design",
+      acceptedTerms: true,
+    });
+
+    const verified = ensureStateConsistency(afterMathew);
+    expect(verified.applications.some((a) => a.id === newKinyuaApp.id)).toBe(true);
+    expect(verified.applications.some((a) => a.id === newMathewApp.id)).toBe(true);
+  });
+
+  it("9. Deleted payouts stay in Trash and never reappear in active payouts after server merge", () => {
+    const payout = {
+      id: "pay-test-1",
+      ambassadorId: "amb-real-1",
+      ambassadorName: "Test Ambassador",
+      ambassadorEmail: "test@example.com",
+      amountKes: 1500,
+      paymentMethod: "MPESA" as const,
+      recipientPhone: "0712345678",
+      status: "requested" as const,
+      requestedAt: new Date().toISOString(),
+      createdAt: new Date().toISOString(),
+    };
+
+    const serverBeforeDelete = {
+      ...INITIAL_DATABASE_STATE,
+      payoutRequests: [payout],
+    };
+
+    const afterMoveToTrash = deletePayoutRequestOp(serverBeforeDelete, {
+      actor: adminActor,
+      payoutRequestId: payout.id,
+      moveToTrash: true,
+    });
+
+    expect(afterMoveToTrash.payoutRequests.some((p) => p.id === payout.id)).toBe(false);
+    expect(afterMoveToTrash.trash?.some((t) => t.entityId === payout.id)).toBe(true);
+
+    // Merging with an older state that still has the payout must keep it in Trash and OUT of active payouts!
+    const merged = mergeDatabaseStates(serverBeforeDelete, afterMoveToTrash);
+    expect(merged.payoutRequests.some((p) => p.id === payout.id)).toBe(false);
+    expect(merged.trash?.some((t) => t.entityId === payout.id)).toBe(true);
+  });
+
+  it("10. Permanently deleting from Trash removes it completely and prevents reappearance on merge", () => {
+    const course = INITIAL_DATABASE_STATE.courses[0];
+    const { nextState: trashedState, trashItem } = moveToTrashOp(INITIAL_DATABASE_STATE, {
+      actor: adminActor,
+      entityType: "course",
+      entityId: course.id,
+    });
+
+    const { nextState: purgedState } = deletePermanentlyFromTrashOp(trashedState, {
+      actor: adminActor,
+      trashId: trashItem.id,
+    });
+
+    expect(purgedState.trash?.some((t) => t.id === trashItem.id)).toBe(false);
+    expect(purgedState.deletedTrashIds).toContain(trashItem.id);
+    expect(purgedState.deletedEntityIds).toContain(course.id);
+
+    // Merging with trashedState (or initial seed state) must NOT bring back the trash item or the course!
+    const mergedWithTrashed = mergeDatabaseStates(trashedState, purgedState);
+    expect(mergedWithTrashed.trash?.some((t) => t.id === trashItem.id)).toBe(false);
+    expect(mergedWithTrashed.courses.some((c) => c.id === course.id)).toBe(false);
+
+    const mergedWithSeed = mergeDatabaseStates(INITIAL_DATABASE_STATE, purgedState);
+    expect(mergedWithSeed.trash?.some((t) => t.id === trashItem.id)).toBe(false);
+    expect(mergedWithSeed.courses.some((c) => c.id === course.id)).toBe(false);
   });
 });

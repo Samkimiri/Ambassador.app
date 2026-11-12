@@ -37,6 +37,24 @@ export const SEEDED_DEMO_AMB_IDS = new Set([
 ]);
 
 /**
+ * Emails whose pre-existing records (created before 2026-11-12T22:46:00.000Z UTC)
+ * are permanently purged so those applicants can submit fresh applications cleanly.
+ */
+export const PURGE_PREEXISTING_EMAILS = new Set([
+  "kinyuam047@gmail.com",
+  "mathewatambo629@gmail.com",
+]);
+export const PURGE_PREEXISTING_CUTOFF_MS = Date.parse("2026-11-12T22:46:00.000Z");
+
+function isPreexistingPurgedEmail(email?: string, createdAt?: string): boolean {
+  if (!email) return false;
+  if (!PURGE_PREEXISTING_EMAILS.has(email.toLowerCase().trim())) return false;
+  if (!createdAt) return true;
+  const ts = Date.parse(createdAt);
+  return Number.isNaN(ts) || ts < PURGE_PREEXISTING_CUTOFF_MS;
+}
+
+/**
  * Ensures state consistency across profiles, applications, and ambassadors:
  * 1. Guarantees Super Admin credentials exist and remain active.
  * 2. Purges any lingering seeded demo records so only real user applications exist.
@@ -51,32 +69,64 @@ export function ensureStateConsistency(state: AppDatabaseState): AppDatabaseStat
 
   const deletedAppSet = new Set(state.deletedApplicationIds || []);
   const deletedUserSet = new Set(state.deletedUserIds || []);
+  const deletedEntitySet = new Set(state.deletedEntityIds || []);
+  const deletedTrashSet = new Set(state.deletedTrashIds || []);
+
+  // Automatically purge expired items from trash (items older than 48 hours / 2 days)
+  const currentTime = Date.now();
+  const cleanTrash = (state.trash || []).filter((t) => {
+    if (deletedTrashSet.has(t.id) || deletedEntitySet.has(t.entityId)) return false;
+    if (t.entityType === "application" && isPreexistingPurgedEmail(t.payload?.email, t.payload?.createdAt)) {
+      return false;
+    }
+    if (t.entityType === "ambassador" && isPreexistingPurgedEmail(t.payload?.ambassador?.email, t.payload?.ambassador?.createdAt)) {
+      return false;
+    }
+    if (new Date(t.expiresAt).getTime() <= currentTime) {
+      deletedTrashSet.add(t.id);
+      deletedEntitySet.add(t.entityId);
+      if (t.entityType === "application") deletedAppSet.add(t.entityId);
+      if (t.entityType === "ambassador") deletedUserSet.add(t.entityId);
+      return false;
+    }
+    return true;
+  });
+
+  const trashedEntitySet = new Set(cleanTrash.map((t) => t.entityId));
 
   const rawProfiles: Profile[] = Array.isArray(state.profiles) ? state.profiles : [];
   const rawAmbassadors: AmbassadorProfile[] = Array.isArray(state.ambassadors) ? state.ambassadors : [];
   const rawApplications = Array.isArray(state.applications) ? state.applications : [];
 
-  // Filter out demo seeds, deleted IDs, and deleted applications
+  // Filter out demo seeds, deleted IDs, trashed IDs, and pre-existing purged emails
   const applications = rawApplications.filter(
     (a) =>
       !deletedAppSet.has(a.id) &&
+      !deletedEntitySet.has(a.id) &&
+      !trashedEntitySet.has(a.id) &&
       !SEEDED_DEMO_APP_IDS.has(a.id) &&
-      !SEEDED_DEMO_EMAILS.has(a.email.toLowerCase().trim())
+      !SEEDED_DEMO_EMAILS.has(a.email.toLowerCase().trim()) &&
+      !isPreexistingPurgedEmail(a.email, a.createdAt)
   );
 
   const profiles: Profile[] = rawProfiles.filter(
     (p) =>
       !deletedUserSet.has(p.id) &&
       !SEEDED_DEMO_USER_IDS.has(p.id) &&
-      (p.role === "super_admin" || !SEEDED_DEMO_EMAILS.has(p.email.toLowerCase().trim()))
+      (p.role === "super_admin" ||
+        (!SEEDED_DEMO_EMAILS.has(p.email.toLowerCase().trim()) &&
+          !isPreexistingPurgedEmail(p.email, p.createdAt)))
   );
 
   const ambassadors: AmbassadorProfile[] = rawAmbassadors.filter(
     (a) =>
       !deletedUserSet.has(a.userId) &&
       !deletedUserSet.has(a.id) &&
+      !deletedEntitySet.has(a.id) &&
+      !trashedEntitySet.has(a.id) &&
       !SEEDED_DEMO_AMB_IDS.has(a.id) &&
-      !SEEDED_DEMO_EMAILS.has(a.email.toLowerCase().trim())
+      !SEEDED_DEMO_EMAILS.has(a.email.toLowerCase().trim()) &&
+      !isPreexistingPurgedEmail(a.email, a.createdAt)
   );
 
   // 1. Ensure Super Admin profile always exists and has valid credentials
@@ -278,21 +328,33 @@ export function ensureStateConsistency(state: AppDatabaseState): AppDatabaseStat
     }
   }
 
-  // Clean referrals and notifications from demo seeds
+  // Clean referrals, payouts, enrolments, courses, campaigns, assets, announcements & notifications
+  const isActiveEntity = (id: string) =>
+    !deletedEntitySet.has(id) && !trashedEntitySet.has(id);
+
   const cleanReferrals = (state.referrals || []).filter(
     (r) =>
+      isActiveEntity(r.id) &&
       !SEEDED_DEMO_AMB_IDS.has(r.ambassadorId) &&
       !SEEDED_DEMO_EMAILS.has(r.learnerEmail.toLowerCase().trim())
   );
 
-  const cleanNotifications = (state.notifications || []).filter(
-    (n) => !SEEDED_DEMO_USER_IDS.has(n.userId)
+  const cleanPayoutRequests = (state.payoutRequests || []).filter(
+    (p) =>
+      isActiveEntity(p.id) &&
+      !SEEDED_DEMO_AMB_IDS.has(p.ambassadorId) &&
+      !deletedUserSet.has(p.ambassadorId) &&
+      !isPreexistingPurgedEmail(p.ambassadorEmail, p.requestedAt)
   );
 
-  // Automatically purge expired items from trash (items older than 48 hours / 2 days)
-  const currentTime = Date.now();
-  const cleanTrash = (state.trash || []).filter(
-    (t) => new Date(t.expiresAt).getTime() > currentTime
+  const cleanEnrolments = (state.enrolments || []).filter((e) => isActiveEntity(e.id));
+  const cleanCourses = (state.courses || []).filter((c) => isActiveEntity(c.id));
+  const cleanCampaigns = (state.campaigns || []).filter((c) => isActiveEntity(c.id));
+  const cleanMarketingAssets = (state.marketingAssets || []).filter((m) => isActiveEntity(m.id));
+  const cleanAnnouncements = (state.announcements || []).filter((a) => isActiveEntity(a.id));
+
+  const cleanNotifications = (state.notifications || []).filter(
+    (n) => !SEEDED_DEMO_USER_IDS.has(n.userId)
   );
 
   return {
@@ -301,9 +363,17 @@ export function ensureStateConsistency(state: AppDatabaseState): AppDatabaseStat
     ambassadors,
     applications,
     referrals: cleanReferrals,
+    payoutRequests: cleanPayoutRequests,
+    enrolments: cleanEnrolments,
+    courses: cleanCourses,
+    campaigns: cleanCampaigns,
+    marketingAssets: cleanMarketingAssets,
+    announcements: cleanAnnouncements,
     notifications: cleanNotifications,
     trash: cleanTrash,
     deletedApplicationIds: Array.from(deletedAppSet),
     deletedUserIds: Array.from(deletedUserSet),
+    deletedEntityIds: Array.from(deletedEntitySet),
+    deletedTrashIds: Array.from(deletedTrashSet),
   };
 }
