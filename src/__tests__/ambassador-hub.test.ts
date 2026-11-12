@@ -200,9 +200,9 @@ describe("SCDS Ambassador Hub — Core Business Logic & Security Suite", () => {
         paymentReference: "QL18TR50KP",
       });
 
-    expect(pointsIssued).toBe(360); // 300 course pts + 60 campaign bonus
-    // Amina is Silver (20% base) + 2% campaign bonus = 22% of 3,500 = KES 770
-    expect(commission.amountKes).toBe(770);
+    expect(pointsIssued).toBe(610); // 550 course pts + 60 campaign bonus
+    // Amina is Silver (20% base) + 2% campaign bonus = 22% of 5,500 = KES 1,210
+    expect(commission.amountKes).toBe(1210);
 
     // Attempting to verify the same referral a second time MUST throw Duplicate Reward Prevention error
     expect(() =>
