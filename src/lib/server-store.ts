@@ -125,12 +125,25 @@ export function mergeDatabaseStates(
       profileMap.set(key, p);
     } else {
       const existing = profileMap.get(key)!;
+      const preservedPassword = p.password || existing.password;
       if (existing.role === "super_admin" || p.role === "super_admin") {
-        profileMap.set(key, { ...existing, ...p, role: "super_admin", status: "active" });
+        profileMap.set(key, {
+          ...existing,
+          ...p,
+          password: preservedPassword,
+          role: "super_admin",
+          status: "active",
+        });
       } else if (existing.role === "ambassador" || p.role === "ambassador") {
-        profileMap.set(key, { ...existing, ...p, role: "ambassador", status: "active" });
+        profileMap.set(key, {
+          ...existing,
+          ...p,
+          password: preservedPassword,
+          role: "ambassador",
+          status: "active",
+        });
       } else {
-        profileMap.set(key, { ...existing, ...p });
+        profileMap.set(key, { ...existing, ...p, password: preservedPassword });
       }
     }
   }

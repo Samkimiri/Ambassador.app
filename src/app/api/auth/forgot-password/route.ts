@@ -3,8 +3,18 @@ import { getSyncedServerDb } from "@/lib/server-store";
 import { buildPasswordResetEmail, sendEmail } from "@/lib/email";
 import { createPasswordResetToken } from "@/lib/password-reset";
 import { getAppUrl } from "@/lib/utils";
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 
 export async function POST(request: Request) {
+  const ip = getClientIp(request);
+  const rate = checkRateLimit(`forgot:${ip}`, 5, 60_000);
+  if (!rate.allowed) {
+    return NextResponse.json(
+      { error: `Too many password reset requests. Please wait ${rate.retryAfterSeconds}s.` },
+      { status: 429 }
+    );
+  }
+
   try {
     const body = await request.json();
     const email =

@@ -4,6 +4,8 @@ import { fetchSupabaseState, saveSupabaseState } from "@/lib/supabase-store";
 import { isSupabaseConfigured } from "@/lib/supabase";
 import { submitAmbassadorApplicationOp } from "@/lib/store-engine";
 import { ambassadorApplicationSchema } from "@/lib/validations";
+import { hashPassword, sanitizeProfile } from "@/lib/security";
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
@@ -33,6 +35,15 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const ip = getClientIp(req);
+  const rate = checkRateLimit(`apply:${ip}`, 10, 60_000);
+  if (!rate.allowed) {
+    return NextResponse.json(
+      { error: `Too many application submissions. Please wait ${rate.retryAfterSeconds}s.` },
+      { status: 429 }
+    );
+  }
+
   try {
     const body = await req.json();
     const parsed = ambassadorApplicationSchema.safeParse(body);
@@ -60,8 +71,18 @@ export async function POST(req: NextRequest) {
       parsed.data
     );
 
+    // Hash the applicant's password before persisting on server / Supabase
+    const securedState = {
+      ...nextState,
+      profiles: nextState.profiles.map((p) =>
+        p.id === profile.id && p.password
+          ? { ...p, password: hashPassword(p.password) }
+          : p
+      ),
+    };
+
     // Persist and merge state on server
-    const merged = savePersistentDb(nextState);
+    const merged = savePersistentDb(securedState);
 
     // Sync merged state to Supabase if configured
     if (isSupabaseConfigured()) {
@@ -69,7 +90,7 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json(
-      { ok: true, application, profile },
+      { ok: true, application, profile: sanitizeProfile(profile) },
       { status: 201 }
     );
   } catch (err) {

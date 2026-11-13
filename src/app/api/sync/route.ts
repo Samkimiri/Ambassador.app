@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getPersistentDb, savePersistentDb } from "@/lib/server-store";
 import { fetchSupabaseState, saveSupabaseState } from "@/lib/supabase-store";
 import { isSupabaseConfigured } from "@/lib/supabase";
+import { sanitizeStateForClient } from "@/lib/security";
 
 export const dynamic = "force-dynamic";
 
@@ -11,7 +12,7 @@ export async function GET() {
     if (supabaseState && Array.isArray(supabaseState.applications)) {
       // Also update local persistent cache
       savePersistentDb(supabaseState);
-      return NextResponse.json(supabaseState, {
+      return NextResponse.json(sanitizeStateForClient(supabaseState), {
         status: 200,
         headers: {
           "Cache-Control": "no-store, no-cache, must-revalidate",
@@ -21,7 +22,7 @@ export async function GET() {
   }
 
   const db = getPersistentDb();
-  return NextResponse.json(db, {
+  return NextResponse.json(sanitizeStateForClient(db), {
     status: 200,
     headers: {
       "Cache-Control": "no-store, no-cache, must-revalidate",
@@ -55,7 +56,10 @@ export async function POST(req: NextRequest) {
       await saveSupabaseState(merged);
     }
 
-    return NextResponse.json({ ok: true, state: merged }, { status: 200 });
+    return NextResponse.json(
+      { ok: true, state: sanitizeStateForClient(merged) },
+      { status: 200 }
+    );
   } catch (err) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Failed to sync state." },

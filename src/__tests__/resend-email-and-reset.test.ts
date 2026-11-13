@@ -12,6 +12,7 @@ import { POST as sendEmailRoute } from "@/app/api/email/send/route";
 import { POST as forgotPasswordRoute } from "@/app/api/auth/forgot-password/route";
 import { POST as resetPasswordRoute } from "@/app/api/auth/reset-password/route";
 import { getPersistentDb, savePersistentDb } from "@/lib/server-store";
+import { verifyPassword, isPasswordHashed } from "@/lib/security";
 
 describe("Resend Email & Password Reset", () => {
   const originalEnv = process.env.RESEND_API_KEY;
@@ -156,7 +157,8 @@ describe("Resend Email & Password Reset", () => {
 
     const updatedDb = getPersistentDb();
     const updatedUser = updatedDb.profiles.find((p) => p.email === testEmail);
-    expect(updatedUser?.password).toBe("NewSecurePassword456");
+    expect(isPasswordHashed(updatedUser?.password)).toBe(true);
+    expect(verifyPassword("NewSecurePassword456", updatedUser?.password)).toBe(true);
 
     // Fallback check when RESEND_API_KEY is unset
     const mockSend = await sendEmail({

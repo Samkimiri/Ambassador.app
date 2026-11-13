@@ -1,8 +1,19 @@
 import { NextResponse } from "next/server";
 import { getSyncedServerDb, saveSyncedServerDb } from "@/lib/server-store";
 import { verifyPasswordResetToken } from "@/lib/password-reset";
+import { hashPassword } from "@/lib/security";
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 
 export async function POST(request: Request) {
+  const ip = getClientIp(request);
+  const rate = checkRateLimit(`reset:${ip}`, 8, 60_000);
+  if (!rate.allowed) {
+    return NextResponse.json(
+      { error: `Too many reset attempts. Please wait ${rate.retryAfterSeconds}s.` },
+      { status: 429 }
+    );
+  }
+
   try {
     const body = await request.json();
     const token = typeof body?.token === "string" ? body.token.trim() : "";
@@ -45,11 +56,12 @@ export async function POST(request: Request) {
     }
 
     const now = new Date().toISOString();
+    const hashedPassword = hashPassword(newPassword);
     const nextState = {
       ...db,
       profiles: db.profiles.map((p) =>
         p.email.toLowerCase().trim() === targetEmail
-          ? { ...p, password: newPassword, updatedAt: now }
+          ? { ...p, password: hashedPassword, updatedAt: now }
           : p
       ),
     };

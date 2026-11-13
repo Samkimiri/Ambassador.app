@@ -28,6 +28,15 @@ export function isEmailConfigured(): boolean {
   return Boolean(process.env.RESEND_API_KEY || process.env.SENDGRID_API_KEY);
 }
 
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 /**
  * Base email layout wrapper with SCDS brand header, cards, and footer
  */
@@ -84,14 +93,17 @@ export function buildApplicationApprovedEmail(params: {
   const url = params.dashboardUrl || `${getAppUrl()}/dashboard`;
   const shareLink = `${getAppUrl()}/join?ref=${params.referralCode}`;
 
+  const safeName = escapeHtml(params.fullName);
+  const safeCode = escapeHtml(params.referralCode);
+
   const html = wrapInScdsEmailLayout(
     "Welcome to SCDS Ambassador Hub!",
-    `<p>Dear <strong>${params.fullName}</strong>,</p>
+    `<p>Dear <strong>${safeName}</strong>,</p>
      <p>Congratulations! Your application to represent <strong>Sam Creative Design School (SCDS)</strong> as a Student Ambassador has been approved.</p>
      
      <div class="highlight-card">
        <p style="margin: 0; font-weight: 700; color: #0048E8;">Your Official Referral Code:</p>
-       <div class="code-box">${params.referralCode}</div>
+       <div class="code-box">${safeCode}</div>
        <p style="margin: 0; font-size: 13px; color: #4B5563;">
          Share your unique link: <br>
          <a href="${shareLink}" style="color: #0048E8; word-break: break-all;">${shareLink}</a>
@@ -225,9 +237,10 @@ export function buildPasswordResetEmail(params: {
   expiresInMinutes?: number;
 }): EmailMessage {
   const expires = params.expiresInMinutes ?? 30;
+  const safeName = escapeHtml(params.fullName);
   const html = wrapInScdsEmailLayout(
     "Reset Your Password",
-    `<p>Dear <strong>${params.fullName}</strong>,</p>
+    `<p>Dear <strong>${safeName}</strong>,</p>
      <p>We received a request to reset the password for your <strong>SCDS Ambassador Hub</strong> account.</p>
      <p style="text-align: center;">
        <a href="${params.resetUrl}" class="button">Reset My Password &rarr;</a>

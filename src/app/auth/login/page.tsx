@@ -15,8 +15,9 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
@@ -24,6 +25,39 @@ export default function LoginPage() {
     if (!parsed.success) {
       setError(parsed.error.issues[0]?.message || "Invalid credentials.");
       return;
+    }
+
+    setSubmitting(true);
+    try {
+      const serverRes = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: parsed.data.email,
+          password: parsed.data.password,
+        }),
+      });
+      if (serverRes.ok) {
+        const res = signInWithEmail(parsed.data.email, parsed.data.password);
+        if (!res.ok || !res.user) {
+          setError(res.error || "Sign-in failed.");
+          return;
+        }
+        router.push(res.user.role === "super_admin" ? "/admin" : "/dashboard");
+        return;
+      }
+
+      const errJson = (await serverRes.json().catch(() => null)) as {
+        error?: string;
+      } | null;
+      if (serverRes.status === 401 || serverRes.status === 403 || serverRes.status === 429) {
+        setError(errJson?.error || "Invalid email or password.");
+        return;
+      }
+    } catch {
+      // Offline fallback to local state verification
+    } finally {
+      setSubmitting(false);
     }
 
     const res = signInWithEmail(parsed.data.email, parsed.data.password);

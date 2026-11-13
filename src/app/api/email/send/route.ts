@@ -1,7 +1,17 @@
 import { NextResponse } from "next/server";
 import { buildApplicationApprovedEmail, sendEmail } from "@/lib/email";
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 
 export async function POST(request: Request) {
+  const ip = getClientIp(request);
+  const rate = checkRateLimit(`email:${ip}`, 20, 60_000);
+  if (!rate.allowed) {
+    return NextResponse.json(
+      { error: `Rate limit exceeded. Please wait ${rate.retryAfterSeconds}s.` },
+      { status: 429 }
+    );
+  }
+
   try {
     const body = await request.json();
     const { type, to, fullName, referralCode, dashboardUrl } = body as {

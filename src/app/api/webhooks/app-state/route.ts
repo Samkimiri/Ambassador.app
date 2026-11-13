@@ -14,6 +14,17 @@ export const dynamic = "force-dynamic";
  * 3. Point to https://<your-domain>/api/webhooks/app-state
  */
 export async function POST(req: NextRequest) {
+  const expectedSecret =
+    process.env.WEBHOOK_SECRET || process.env.SUPABASE_WEBHOOK_SECRET;
+  if (expectedSecret) {
+    const provided =
+      req.headers.get("x-webhook-secret") ||
+      req.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
+    if (provided !== expectedSecret) {
+      return NextResponse.json({ error: "Unauthorized webhook." }, { status: 401 });
+    }
+  }
+
   try {
     const payload = await req.json();
 
