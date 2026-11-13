@@ -755,19 +755,28 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     // 1. Direct server persistence via dedicated API
     let serverApp: AmbassadorApplication | null = null;
     let serverProfile: Profile | null = null;
-    try {
+    const isOffline =
+      typeof navigator !== "undefined" && navigator.onLine === false;
+
+    if (!isOffline) {
       const res = await fetch("/api/applications", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(input),
       });
-      if (res.ok) {
-        const json = await res.json();
-        serverApp = json.application || null;
-        serverProfile = json.profile || null;
+      const json = (await res.json().catch(() => null)) as {
+        error?: string;
+        application?: AmbassadorApplication;
+        profile?: Profile;
+      } | null;
+      if (!res.ok) {
+        throw new Error(
+          json?.error ||
+            "Unable to submit your application to the server. Please try again."
+        );
       }
-    } catch (err) {
-      console.warn("Could not submit directly to /api/applications:", err);
+      serverApp = json?.application || null;
+      serverProfile = json?.profile || null;
     }
 
     // 2. Client-side operation & broadcast sync

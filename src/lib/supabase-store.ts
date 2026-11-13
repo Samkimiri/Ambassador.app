@@ -1,29 +1,34 @@
-import { createClient } from "@supabase/supabase-js";
-import { getSupabaseUrl, getSupabaseAnonKey, isSupabaseConfigured } from "@/lib/supabase";
+import { getSupabaseServiceClient, getSupabaseUrl, isSupabaseConfigured } from "@/lib/supabase";
 import { AppDatabaseState } from "@/lib/seed-data";
+import { AmbassadorApplication } from "@/types";
 
 /**
- * Persists and retrieves shared state from Supabase when cloud credentials are configured.
- * This guarantees real-time cross-device sync between applicants on mobile/incognito
- * and the administrator console on desktop/Vercel.
+ * Checks whether server-side Supabase credentials (URL + service role key) are configured.
  */
-function getClient() {
-  if (!isSupabaseConfigured()) return null;
+export function isSupabaseServiceConfigured(): boolean {
   const url = getSupabaseUrl();
   const serviceKey =
     process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
-  const anonKey = getSupabaseAnonKey();
-  const key = serviceKey || anonKey;
-  if (!url || !key) return null;
+  return Boolean(url && serviceKey && url.startsWith("http"));
+}
 
-  return createClient(url, key, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
+function getServerClient() {
+  if (isSupabaseServiceConfigured()) {
+    return getSupabaseServiceClient();
+  }
+  return null;
 }
 
 export async function fetchSupabaseState(): Promise<AppDatabaseState | null> {
-  const client = getClient();
-  if (!client) return null;
+  const client = getServerClient();
+  if (!client) {
+    if (isSupabaseConfigured()) {
+      console.warn(
+        "[Supabase] SUPABASE_SERVICE_ROLE_KEY is missing; server state cannot be fetched securely."
+      );
+    }
+    return null;
+  }
 
   try {
     const { data, error } = await client
@@ -44,7 +49,7 @@ export async function fetchSupabaseState(): Promise<AppDatabaseState | null> {
 }
 
 export async function saveSupabaseState(state: AppDatabaseState): Promise<boolean> {
-  const client = getClient();
+  const client = getServerClient();
   if (!client) return false;
 
   try {
@@ -58,12 +63,71 @@ export async function saveSupabaseState(state: AppDatabaseState): Promise<boolea
     );
 
     if (error) {
-      console.warn("Could not upsert to Supabase app_state:", error.message);
+      console.error("Could not upsert to Supabase app_state:", error.message);
       return false;
     }
     return true;
   } catch (err) {
-    console.warn("Failed to write to Supabase app_state:", err);
+    console.error("Failed to write to Supabase app_state:", err);
     return false;
+  }
+}
+
+export async function upsertSupabaseApplication(
+  app: AmbassadorApplication
+): Promise<boolean> {
+  const client = getServerClient();
+  if (!client) return false;
+
+  try {
+    const { error } = await client.from("applications").upsert(
+      {
+        id: app.id,
+        user_id: app.userId,
+        full_name: app.fullName,
+        email: app.email.toLowerCase().trim(),
+        phone: app.phone,
+        county: app.county || null,
+        institution: app.institution || null,
+        occupation: app.occupation || null,
+        status: app.status,
+        payload: app,
+        created_at: app.createdAt || new Date().toISOString(),
+        reviewed_at: app.reviewedAt || null,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "id" }
+    );
+
+    if (error) {
+      console.warn("Could not upsert to Supabase applications table:", error.message);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.warn("Failed to upsert to Supabase applications table:", err);
+    return false;
+  }
+}
+
+export async function fetchSupabaseApplications(): Promise<AmbassadorApplication[] | null> {
+  const client = getServerClient();
+  if (!client) return null;
+
+  try {
+    const { data, error } = await client
+      .from("applications")
+      .select("payload")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      return null;
+    }
+
+    return (data || [])
+      .map((row: { payload?: AmbassadorApplication }) => row.payload)
+      .filter((p): p is AmbassadorApplication => Boolean(p && p.id));
+  } catch {
+    return null;
   }
 }

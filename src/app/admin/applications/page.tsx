@@ -116,14 +116,21 @@ export default function AdminApplicationsPage() {
 
   useEffect(() => {
     refreshLiveState();
+    const interval = setInterval(() => {
+      refreshLiveState();
+    }, 30_000);
+    return () => clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Exclude deleted applications and sort with newest on top (createdAt DESC)
+  // Exclude deleted applications and sort with pending first, then newest on top
   const deletedSet = new Set(db.deletedApplicationIds || []);
   const sortedApplications = [...db.applications]
     .filter((a) => !deletedSet.has(a.id))
     .sort((a, b) => {
+      const aPending = a.status === "pending" ? 0 : 1;
+      const bPending = b.status === "pending" ? 0 : 1;
+      if (aPending !== bPending) return aPending - bPending;
       const timeA = new Date(a.createdAt || 0).getTime();
       const timeB = new Date(b.createdAt || 0).getTime();
       return timeB - timeA; // Newest on top!

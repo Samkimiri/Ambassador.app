@@ -270,8 +270,45 @@ describe("Ambassador Application Management, Deletion & Candidate Readiness Suit
 
     const getRes = await getApplications();
     expect(getRes.status).toBe(200);
+    expect(getRes.headers.get("cache-control")).toContain("no-store");
     const getJson = await getRes.json();
     expect(getJson.ok).toBe(true);
     expect(getJson.applications.some((a: any) => a.email === reqBody.email.toLowerCase())).toBe(true);
+  });
+
+  it("8. Fails loudly with 503 in production/Vercel if Supabase service env vars are missing", async () => {
+    const prevVercel = process.env.VERCEL;
+    const prevServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    process.env.VERCEL = "1";
+    delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    try {
+      const getRes = await getApplications();
+      expect(getRes.status).toBe(503);
+
+      const postReq = new NextRequest("http://localhost:3000/api/applications", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-forwarded-for": "10.8.8.8" },
+        body: JSON.stringify({
+          fullName: "Prod Test",
+          email: "prod.test@example.com",
+          phone: "0711111111",
+          password: "Password123!",
+          county: "Nairobi",
+          institution: "UON",
+          occupation: "Student",
+          motivation: "Testing production Supabase enforcement",
+          experience: "Testing",
+          acceptedTerms: true,
+        }),
+      });
+      const postRes = await postApplications(postReq);
+      expect(postRes.status).toBe(503);
+    } finally {
+      if (prevVercel === undefined) delete process.env.VERCEL;
+      else process.env.VERCEL = prevVercel;
+      if (prevServiceKey === undefined) delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+      else process.env.SUPABASE_SERVICE_ROLE_KEY = prevServiceKey;
+    }
   });
 });
