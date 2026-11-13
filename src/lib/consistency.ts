@@ -37,21 +37,23 @@ export const SEEDED_DEMO_AMB_IDS = new Set([
 ]);
 
 /**
- * Emails whose pre-existing records (created before 2026-11-12T22:46:00.000Z UTC)
- * are permanently purged so those applicants can submit fresh applications cleanly.
+ * Emails whose pre-existing records (created before their respective purge cutoff)
+ * are permanently purged so those users have zero access unless they create a new account.
  */
-export const PURGE_PREEXISTING_EMAILS = new Set([
-  "kinyuam047@gmail.com",
-  "mathewatambo629@gmail.com",
-]);
+export const PURGE_EMAIL_CUTOFFS: Record<string, number> = {
+  "kinyuam047@gmail.com": Date.parse("2026-11-12T22:46:00.000Z"),
+  "mathewatambo629@gmail.com": Date.parse("2026-11-13T09:29:00.000Z"),
+};
+export const PURGE_PREEXISTING_EMAILS = new Set(Object.keys(PURGE_EMAIL_CUTOFFS));
 export const PURGE_PREEXISTING_CUTOFF_MS = Date.parse("2026-11-12T22:46:00.000Z");
 
 function isPreexistingPurgedEmail(email?: string, createdAt?: string): boolean {
   if (!email) return false;
-  if (!PURGE_PREEXISTING_EMAILS.has(email.toLowerCase().trim())) return false;
+  const cutoff = PURGE_EMAIL_CUTOFFS[email.toLowerCase().trim()];
+  if (cutoff === undefined) return false;
   if (!createdAt) return true;
   const ts = Date.parse(createdAt);
-  return Number.isNaN(ts) || ts < PURGE_PREEXISTING_CUTOFF_MS;
+  return Number.isNaN(ts) || ts < cutoff;
 }
 
 /**

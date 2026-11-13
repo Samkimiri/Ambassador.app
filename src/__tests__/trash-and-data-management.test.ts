@@ -237,8 +237,8 @@ describe("Trash Platform & 48-Hour Data Retention Management", () => {
           fullName: "Mathew Old",
           role: "learner" as const,
           status: "pending" as const,
-          createdAt: oldTimestamp,
-          updatedAt: oldTimestamp,
+          createdAt: "2026-11-13T08:00:00.000Z",
+          updatedAt: "2026-11-13T08:00:00.000Z",
         },
       ],
       applications: [
