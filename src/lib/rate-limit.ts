@@ -26,9 +26,9 @@ export function checkRateLimit(
 
   // Periodically prune expired buckets to keep memory bounded
   if (buckets.size > 5000) {
-    for (const [k, v] of buckets.entries()) {
+    buckets.forEach((v, k) => {
       if (v.resetAt <= now) buckets.delete(k);
-    }
+    });
   }
 
   buckets.set(key, { count: 1, resetAt: now + windowMs });
