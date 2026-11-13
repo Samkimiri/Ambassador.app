@@ -5,14 +5,17 @@ import { Profile } from "@/types";
 export const SESSION_COOKIE_NAME = "scds_session";
 const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
-function getSessionSecret(): string {
-  return (
+function getSessionSecret(): string | null {
+  const secret =
     process.env.AUTH_SESSION_SECRET ||
     process.env.PASSWORD_RESET_SECRET ||
-    process.env.RESEND_API_KEY ||
     process.env.SUPABASE_SERVICE_ROLE_KEY ||
-    "scds-ambassador-hub-session-secret-v1"
-  );
+    process.env.RESEND_API_KEY;
+  if (secret) return secret;
+  if (process.env.NODE_ENV === "test") {
+    return "scds-vitest-ephemeral-session-secret";
+  }
+  return null;
 }
 
 /**
@@ -92,6 +95,10 @@ export interface SessionTokenPayload {
 }
 
 export function createSessionToken(profile: Pick<Profile, "id" | "email" | "role">): string {
+  const secret = getSessionSecret();
+  if (!secret) {
+    throw new Error("Session signing secret (AUTH_SESSION_SECRET) is not configured.");
+  }
   const payload: SessionTokenPayload = {
     userId: profile.id,
     email: profile.email.toLowerCase().trim(),
@@ -100,7 +107,7 @@ export function createSessionToken(profile: Pick<Profile, "id" | "email" | "role
   };
   const encoded = Buffer.from(JSON.stringify(payload), "utf-8").toString("base64url");
   const sig = crypto
-    .createHmac("sha256", getSessionSecret())
+    .createHmac("sha256", secret)
     .update(encoded)
     .digest("base64url");
   return `${encoded}.${sig}`;
@@ -108,12 +115,14 @@ export function createSessionToken(profile: Pick<Profile, "id" | "email" | "role
 
 export function verifySessionToken(token?: string | null): SessionTokenPayload | null {
   if (!token || !token.includes(".")) return null;
+  const secret = getSessionSecret();
+  if (!secret) return null;
   const parts = token.split(".");
   if (parts.length !== 2) return null;
   const [encoded, providedSig] = parts;
 
   const expectedSig = crypto
-    .createHmac("sha256", getSessionSecret())
+    .createHmac("sha256", secret)
     .update(encoded)
     .digest("base64url");
 
