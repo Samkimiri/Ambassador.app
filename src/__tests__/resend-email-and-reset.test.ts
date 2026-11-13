@@ -215,4 +215,31 @@ describe("Resend Email & Password Reset", () => {
     expect(mockSend.success).toBe(true);
     expect(mockSend.isMock).toBe(true);
   });
+
+  it("retries with onboarding@resend.dev if primary EMAIL_FROM domain is unverified", async () => {
+    process.env.RESEND_API_KEY = "re_test_key_domain_fallback";
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 403,
+        text: async () => JSON.stringify({ message: "The domain is not verified." }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({ id: "re_fallback_123" }),
+      });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const res = await sendEmail({
+      to: "user@example.com",
+      subject: "Reset Code",
+      html: "<p>Code</p>",
+    });
+
+    expect(res.success).toBe(true);
+    expect(res.messageId).toBe("re_fallback_123");
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
 });

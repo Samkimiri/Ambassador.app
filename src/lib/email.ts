@@ -283,29 +283,78 @@ export function buildPasswordResetEmail(params: {
  * Dispatch an email message via Resend, Sendgrid, or safe dev mock fallback
  */
 export async function sendEmail(message: EmailMessage): Promise<EmailSendResult> {
-  const resendKey = process.env.RESEND_API_KEY;
+  const resendKey = process.env.RESEND_API_KEY?.trim();
 
   if (resendKey) {
-    try {
-      const res = await fetch("https://api.resend.com/emails", {
+    const primaryFrom =
+      process.env.EMAIL_FROM?.trim() ||
+      "SCDS Ambassador Hub <ambassadors@samcreativedesignschool.com>";
+    const fallbackFrom = "SCDS Ambassador Hub <onboarding@resend.dev>";
+
+    const dispatchViaResend = async (fromAddress: string) => {
+      return fetch("https://api.resend.com/emails", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${resendKey}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          from:
-            process.env.EMAIL_FROM ||
-            "SCDS Ambassador Hub <ambassadors@samcreativedesignschool.com>",
+          from: fromAddress,
           to: [message.to],
           subject: message.subject,
           html: message.html,
+          ...(message.text ? { text: message.text } : {}),
         }),
       });
+    };
+
+    try {
+      let res = await dispatchViaResend(primaryFrom);
+
+      // If custom domain is not yet verified in Resend, automatically retry with Resend's default sender
+      if (!res.ok && primaryFrom !== fallbackFrom) {
+        const firstErrText = await res.text();
+        if (
+          res.status === 403 ||
+          firstErrText.toLowerCase().includes("not verified") ||
+          firstErrText.toLowerCase().includes("domain")
+        ) {
+          const retryRes = await dispatchViaResend(fallbackFrom);
+          if (retryRes.ok) {
+            const retryData = await retryRes.json();
+            return { success: true, messageId: retryData.id, isMock: false };
+          }
+          const retryErrText = await retryRes.text();
+          let parsedMsg = retryErrText;
+          try {
+            const j = JSON.parse(retryErrText) as { message?: string };
+            if (j?.message) parsedMsg = j.message;
+          } catch {
+            // keep raw text
+          }
+          return { success: false, error: parsedMsg, isMock: false };
+        }
+
+        let parsedMsg = firstErrText;
+        try {
+          const j = JSON.parse(firstErrText) as { message?: string };
+          if (j?.message) parsedMsg = j.message;
+        } catch {
+          // keep raw text
+        }
+        return { success: false, error: parsedMsg, isMock: false };
+      }
 
       if (!res.ok) {
         const errorText = await res.text();
-        return { success: false, error: errorText, isMock: false };
+        let parsedMsg = errorText;
+        try {
+          const j = JSON.parse(errorText) as { message?: string };
+          if (j?.message) parsedMsg = j.message;
+        } catch {
+          // keep raw text
+        }
+        return { success: false, error: parsedMsg, isMock: false };
       }
 
       const data = await res.json();

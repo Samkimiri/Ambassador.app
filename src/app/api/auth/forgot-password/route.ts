@@ -10,6 +10,8 @@ import { getAppUrl } from "@/lib/utils";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import { Profile } from "@/types";
 
+export const dynamic = "force-dynamic";
+
 export async function POST(request: Request) {
   const ip = getClientIp(request);
   const rate = checkRateLimit(`forgot:${ip}`, 5, 60_000);
@@ -72,75 +74,88 @@ export async function POST(request: Request) {
       }
     }
 
-    if (profile && profile.status !== "blocked") {
-      const resetCode = generateResetCode();
-      const resetCodeHash = hashResetCode(resetCode);
-      const resetCodeExpiresAt = new Date(Date.now() + 30 * 60_000).toISOString();
+    if (!profile) {
+      return NextResponse.json(
+        {
+          error:
+            "No account found with that email address. Please check your spelling or apply to become an ambassador first.",
+        },
+        { status: 404 }
+      );
+    }
 
-      const updatedProfiles: Profile[] = db.profiles.some(
-        (p) => p.email.toLowerCase().trim() === email
-      )
-        ? db.profiles.map((p) =>
-            p.email.toLowerCase().trim() === email
-              ? { ...p, resetCodeHash, resetCodeExpiresAt }
-              : p
-          )
-        : [{ ...profile, resetCodeHash, resetCodeExpiresAt }, ...db.profiles];
+    if (profile.status === "blocked") {
+      return NextResponse.json(
+        {
+          error:
+            "This account has been blocked by the administrator. Please contact SCDS support.",
+        },
+        { status: 403 }
+      );
+    }
 
-      await saveSyncedServerDb({ ...db, profiles: updatedProfiles });
+    const resetCode = generateResetCode();
+    const resetCodeHash = hashResetCode(resetCode);
+    const resetCodeExpiresAt = new Date(Date.now() + 30 * 60_000).toISOString();
 
-      const token = createPasswordResetToken(profile.email);
-      const origin = request.headers.get("origin") || getAppUrl();
-      const resetUrl = `${origin.replace(/\/+$/, "")}/auth/reset-password?token=${encodeURIComponent(token)}`;
+    const updatedProfiles: Profile[] = db.profiles.some(
+      (p) => p.email.toLowerCase().trim() === email
+    )
+      ? db.profiles.map((p) =>
+          p.email.toLowerCase().trim() === email
+            ? { ...p, resetCodeHash, resetCodeExpiresAt }
+            : p
+        )
+      : [{ ...profile, resetCodeHash, resetCodeExpiresAt }, ...db.profiles];
 
-      const emailMessage = buildPasswordResetEmail({
-        fullName: profile.fullName,
-        resetUrl,
-        resetCode,
-        expiresInMinutes: 30,
-      });
+    await saveSyncedServerDb({ ...db, profiles: updatedProfiles });
 
-      const sendResult = await sendEmail({
-        ...emailMessage,
-        to: profile.email,
-      });
+    const token = createPasswordResetToken(profile.email);
+    const origin = request.headers.get("origin") || getAppUrl();
+    const resetUrl = `${origin.replace(/\/+$/, "")}/auth/reset-password?token=${encodeURIComponent(token)}`;
 
-      if (!sendResult.success) {
-        return NextResponse.json(
-          {
-            error:
-              sendResult.error ||
-              "Failed to send password reset email via Resend.",
-          },
-          { status: 502 }
-        );
-      }
+    const emailMessage = buildPasswordResetEmail({
+      fullName: profile.fullName,
+      resetUrl,
+      resetCode,
+      expiresInMinutes: 30,
+    });
 
-      if (sendResult.isMock && process.env.NODE_ENV === "production") {
-        return NextResponse.json(
-          {
-            error:
-              "Resend email service is not configured on the server (missing RESEND_API_KEY). Please contact the administrator.",
-          },
-          { status: 503 }
-        );
-      }
+    const sendResult = await sendEmail({
+      ...emailMessage,
+      to: profile.email,
+    });
 
-      return NextResponse.json({
-        ok: true,
-        message:
-          "A 6-digit password reset code and recovery link have been sent to your email via Resend.",
-        isMock: sendResult.isMock,
-        ...(sendResult.isMock && process.env.NODE_ENV !== "production"
-          ? { devResetUrl: resetUrl, devResetCode: resetCode }
-          : {}),
-      });
+    if (!sendResult.success) {
+      return NextResponse.json(
+        {
+          error:
+            sendResult.error ||
+            "Failed to send password reset email via Resend.",
+        },
+        { status: 502 }
+      );
+    }
+
+    if (sendResult.isMock && process.env.NODE_ENV === "production") {
+      return NextResponse.json(
+        {
+          error:
+            "Resend email service is not configured on the server (missing RESEND_API_KEY). Please contact the administrator.",
+        },
+        { status: 503 }
+      );
     }
 
     return NextResponse.json({
       ok: true,
       message:
-        "If an SCDS Ambassador Hub account exists for that email, a 6-digit password reset code and recovery link have been sent.",
+        "A 6-digit password reset code and recovery link have been sent to your email via Resend.",
+      messageId: sendResult.messageId,
+      isMock: sendResult.isMock,
+      ...(sendResult.isMock && process.env.NODE_ENV !== "production"
+        ? { devResetUrl: resetUrl, devResetCode: resetCode }
+        : {}),
     });
   } catch (err) {
     return NextResponse.json(

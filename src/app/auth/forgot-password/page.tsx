@@ -12,6 +12,7 @@ export default function ForgotPasswordPage() {
   const [error, setError] = useState("");
   const [devResetUrl, setDevResetUrl] = useState<string | null>(null);
   const [devResetCode, setDevResetCode] = useState<string | null>(null);
+  const [messageId, setMessageId] = useState<string | null>(null);
 
   const handleReset = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,6 +22,7 @@ export default function ForgotPasswordPage() {
     setError("");
     setDevResetUrl(null);
     setDevResetCode(null);
+    setMessageId(null);
 
     try {
       const res = await fetch("/api/auth/forgot-password", {
@@ -37,6 +39,9 @@ export default function ForgotPasswordPage() {
         }
         if (typeof data?.devResetCode === "string") {
           setDevResetCode(data.devResetCode);
+        }
+        if (typeof data?.messageId === "string") {
+          setMessageId(data.messageId);
         }
         setSubmitted(true);
       }
@@ -61,11 +66,15 @@ export default function ForgotPasswordPage() {
                 Password Reset Instructions Sent
               </h1>
               <p className="text-xs text-slate-600 leading-relaxed">
-                If an SCDS Ambassador Hub account exists for{" "}
-                <strong className="break-all">{email}</strong>, a 6-digit reset
-                code and recovery link have been emailed via Resend. Check your
-                inbox (and spam folder).
+                A 6-digit reset code and recovery link have been sent to{" "}
+                <strong className="break-all">{email}</strong> via Resend. Check
+                your inbox (and spam folder).
               </p>
+              {messageId && !devResetUrl && (
+                <div className="text-[11px] text-slate-500">
+                  Delivery Ref: <span className="font-mono">{messageId}</span>
+                </div>
+              )}
               {devResetUrl && (
                 <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-left text-[11px] text-amber-900 space-y-1">
                   <div className="font-semibold">
