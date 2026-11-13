@@ -43,6 +43,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Sync latest cloud state first so cold serverless instances never overwrite Supabase
+    if (isSupabaseConfigured()) {
+      const supabaseState = await fetchSupabaseState();
+      if (supabaseState) {
+        savePersistentDb(supabaseState);
+      }
+    }
+
     // Retrieve fresh persistent state
     const currentDb = getPersistentDb();
 
@@ -53,12 +61,11 @@ export async function POST(req: NextRequest) {
     );
 
     // Persist and merge state on server
-    savePersistentDb(nextState);
+    const merged = savePersistentDb(nextState);
 
-    // Sync to Supabase if configured
+    // Sync merged state to Supabase if configured
     if (isSupabaseConfigured()) {
-      const updated = getPersistentDb();
-      await saveSupabaseState(updated);
+      await saveSupabaseState(merged);
     }
 
     return NextResponse.json(

@@ -39,12 +39,20 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 1. Save in local/serverless persistent store
-    savePersistentDb(nextState);
-
-    // 2. Save in Supabase cloud database if configured
+    // 1. Pull latest cloud state first so concurrent devices never overwrite each other
     if (isSupabaseConfigured()) {
-      await saveSupabaseState(nextState);
+      const supabaseState = await fetchSupabaseState();
+      if (supabaseState) {
+        savePersistentDb(supabaseState);
+      }
+    }
+
+    // 2. Merge incoming client state with server/cloud state
+    const merged = savePersistentDb(nextState);
+
+    // 3. Save merged state in Supabase cloud database if configured
+    if (isSupabaseConfigured()) {
+      await saveSupabaseState(merged);
     }
 
     return NextResponse.json({ ok: true }, { status: 200 });

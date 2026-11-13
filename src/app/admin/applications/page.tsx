@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   AlertTriangle,
   Award,
@@ -113,6 +113,11 @@ export default function AdminApplicationsPage() {
   const [feedback, setFeedback] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+
+  useEffect(() => {
+    refreshLiveState();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Exclude deleted applications and sort with newest on top (createdAt DESC)
   const deletedSet = new Set(db.deletedApplicationIds || []);

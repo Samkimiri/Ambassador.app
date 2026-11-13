@@ -266,7 +266,7 @@ export function getPersistentDb(): AppDatabaseState {
   }
 }
 
-export function savePersistentDb(state: AppDatabaseState): void {
+export function savePersistentDb(state: AppDatabaseState): AppDatabaseState {
   const current = getPersistentDb();
   const merged = mergeDatabaseStates(current, state);
   globalThis.__scds_server_db__ = merged;
@@ -279,4 +279,5 @@ export function savePersistentDb(state: AppDatabaseState): void {
   } catch (err) {
     console.warn("Could not write file to disk (retained in-memory):", err);
   }
+  return merged;
 }
