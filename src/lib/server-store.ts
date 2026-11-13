@@ -126,11 +126,19 @@ export function mergeDatabaseStates(
     } else {
       const existing = profileMap.get(key)!;
       const preservedPassword = p.password || existing.password;
+      const preservedResetHash =
+        p.resetCodeHash !== undefined ? p.resetCodeHash : existing.resetCodeHash;
+      const preservedResetExp =
+        p.resetCodeExpiresAt !== undefined
+          ? p.resetCodeExpiresAt
+          : existing.resetCodeExpiresAt;
       if (existing.role === "super_admin" || p.role === "super_admin") {
         profileMap.set(key, {
           ...existing,
           ...p,
           password: preservedPassword,
+          resetCodeHash: preservedResetHash,
+          resetCodeExpiresAt: preservedResetExp,
           role: "super_admin",
           status: "active",
         });
@@ -139,11 +147,19 @@ export function mergeDatabaseStates(
           ...existing,
           ...p,
           password: preservedPassword,
+          resetCodeHash: preservedResetHash,
+          resetCodeExpiresAt: preservedResetExp,
           role: "ambassador",
           status: "active",
         });
       } else {
-        profileMap.set(key, { ...existing, ...p, password: preservedPassword });
+        profileMap.set(key, {
+          ...existing,
+          ...p,
+          password: preservedPassword,
+          resetCodeHash: preservedResetHash,
+          resetCodeExpiresAt: preservedResetExp,
+        });
       }
     }
   }

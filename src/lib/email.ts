@@ -234,21 +234,32 @@ export function buildPayoutDisbursedEmail(params: {
 export function buildPasswordResetEmail(params: {
   fullName: string;
   resetUrl: string;
+  resetCode?: string;
   expiresInMinutes?: number;
 }): EmailMessage {
   const expires = params.expiresInMinutes ?? 30;
   const safeName = escapeHtml(params.fullName);
+  const safeCode = params.resetCode ? escapeHtml(params.resetCode) : "";
   const html = wrapInScdsEmailLayout(
     "Reset Your Password",
     `<p>Dear <strong>${safeName}</strong>,</p>
      <p>We received a request to reset the password for your <strong>SCDS Ambassador Hub</strong> account.</p>
+     ${
+       safeCode
+         ? `<div class="highlight-card">
+              <p style="margin: 0; font-weight: 700; color: #0048E8;">Your 6-Digit Reset Code:</p>
+              <div class="code-box">${safeCode}</div>
+              <p style="margin: 0; font-size: 13px; color: #4B5563;">Enter this code on the password reset page, or click the button below.</p>
+            </div>`
+         : ""
+     }
      <p style="text-align: center;">
        <a href="${params.resetUrl}" class="button">Reset My Password &rarr;</a>
      </p>
      <div class="highlight-card">
        <p style="margin: 0 0 6px 0; font-weight: 700; color: #0B1F50;">Security Details:</p>
        <p style="margin: 0; font-size: 13px; color: #4B5563;">
-         This link will expire in <strong>${expires} minutes</strong>. If you did not request a password reset, you can safely ignore this email.
+         This code and link will expire in <strong>${expires} minutes</strong>. If you did not request a password reset, you can safely ignore this email.
        </p>
        <p style="margin: 10px 0 0 0; font-size: 12px; color: #6B7280; word-break: break-all;">
          Or copy and paste this link: <a href="${params.resetUrl}" style="color: #0048E8;">${params.resetUrl}</a>
@@ -260,9 +271,11 @@ export function buildPasswordResetEmail(params: {
   return {
     to: "",
     toName: params.fullName,
-    subject: "Reset Your SCDS Ambassador Hub Password",
+    subject: safeCode
+      ? `Your SCDS Password Reset Code: ${safeCode}`
+      : "Reset Your SCDS Ambassador Hub Password",
     html,
-    text: `Reset your SCDS Ambassador Hub password using this link (expires in ${expires} minutes): ${params.resetUrl}`,
+    text: `${safeCode ? `Your 6-digit password reset code is ${safeCode}. ` : ""}Reset your SCDS Ambassador Hub password using this link (expires in ${expires} minutes): ${params.resetUrl}`,
   };
 }
 

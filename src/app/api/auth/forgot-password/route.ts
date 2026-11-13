@@ -1,16 +1,23 @@
 import { NextResponse } from "next/server";
-import { getSyncedServerDb } from "@/lib/server-store";
+import { getSyncedServerDb, saveSyncedServerDb } from "@/lib/server-store";
 import { buildPasswordResetEmail, sendEmail } from "@/lib/email";
-import { createPasswordResetToken } from "@/lib/password-reset";
+import {
+  createPasswordResetToken,
+  generateResetCode,
+  hashResetCode,
+} from "@/lib/password-reset";
 import { getAppUrl } from "@/lib/utils";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
+import { Profile } from "@/types";
 
 export async function POST(request: Request) {
   const ip = getClientIp(request);
   const rate = checkRateLimit(`forgot:${ip}`, 5, 60_000);
   if (!rate.allowed) {
     return NextResponse.json(
-      { error: `Too many password reset requests. Please wait ${rate.retryAfterSeconds}s.` },
+      {
+        error: `Too many password reset requests. Please wait ${rate.retryAfterSeconds}s.`,
+      },
       { status: 429 }
     );
   }
@@ -28,11 +35,60 @@ export async function POST(request: Request) {
     }
 
     const db = await getSyncedServerDb();
-    const profile = db.profiles.find(
+    let profile = db.profiles.find(
       (p) => p.email.toLowerCase().trim() === email
     );
 
+    // Fallback: recover profile from applications or ambassadors directory if missing
+    if (!profile) {
+      const app = db.applications.find(
+        (a) => a.email.toLowerCase().trim() === email
+      );
+      const amb = db.ambassadors.find(
+        (a) => a.email.toLowerCase().trim() === email
+      );
+      if (app || amb) {
+        const now = new Date().toISOString();
+        profile = {
+          id: app?.userId || amb?.userId || `user-${Date.now()}`,
+          email,
+          fullName: app?.fullName || amb?.fullName || "SCDS Applicant",
+          phone: app?.phone || amb?.phone || "",
+          role:
+            app?.status === "approved" || amb
+              ? "ambassador"
+              : "learner",
+          status:
+            amb?.isBlocked
+              ? "blocked"
+              : app?.status === "approved" || amb
+              ? "active"
+              : app?.status === "rejected"
+              ? "rejected"
+              : "pending",
+          createdAt: app?.createdAt || amb?.createdAt || now,
+          updatedAt: now,
+        };
+      }
+    }
+
     if (profile && profile.status !== "blocked") {
+      const resetCode = generateResetCode();
+      const resetCodeHash = hashResetCode(resetCode);
+      const resetCodeExpiresAt = new Date(Date.now() + 30 * 60_000).toISOString();
+
+      const updatedProfiles: Profile[] = db.profiles.some(
+        (p) => p.email.toLowerCase().trim() === email
+      )
+        ? db.profiles.map((p) =>
+            p.email.toLowerCase().trim() === email
+              ? { ...p, resetCodeHash, resetCodeExpiresAt }
+              : p
+          )
+        : [{ ...profile, resetCodeHash, resetCodeExpiresAt }, ...db.profiles];
+
+      await saveSyncedServerDb({ ...db, profiles: updatedProfiles });
+
       const token = createPasswordResetToken(profile.email);
       const origin = request.headers.get("origin") || getAppUrl();
       const resetUrl = `${origin.replace(/\/+$/, "")}/auth/reset-password?token=${encodeURIComponent(token)}`;
@@ -40,6 +96,7 @@ export async function POST(request: Request) {
       const emailMessage = buildPasswordResetEmail({
         fullName: profile.fullName,
         resetUrl,
+        resetCode,
         expiresInMinutes: 30,
       });
 
@@ -59,13 +116,23 @@ export async function POST(request: Request) {
         );
       }
 
+      if (sendResult.isMock && process.env.NODE_ENV === "production") {
+        return NextResponse.json(
+          {
+            error:
+              "Resend email service is not configured on the server (missing RESEND_API_KEY). Please contact the administrator.",
+          },
+          { status: 503 }
+        );
+      }
+
       return NextResponse.json({
         ok: true,
         message:
-          "If an SCDS Ambassador Hub account exists for that email, a password reset link has been sent.",
+          "A 6-digit password reset code and recovery link have been sent to your email via Resend.",
         isMock: sendResult.isMock,
         ...(sendResult.isMock && process.env.NODE_ENV !== "production"
-          ? { devResetUrl: resetUrl }
+          ? { devResetUrl: resetUrl, devResetCode: resetCode }
           : {}),
       });
     }
@@ -73,7 +140,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       ok: true,
       message:
-        "If an SCDS Ambassador Hub account exists for that email, a password reset link has been sent.",
+        "If an SCDS Ambassador Hub account exists for that email, a 6-digit password reset code and recovery link have been sent.",
     });
   } catch (err) {
     return NextResponse.json(

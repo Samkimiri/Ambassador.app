@@ -81,3 +81,34 @@ export function verifyPasswordResetToken(
     return { valid: false, error: "Could not decode password reset token." };
   }
 }
+
+export function generateResetCode(): string {
+  return String(crypto.randomInt(100000, 1000000));
+}
+
+export function hashResetCode(code: string): string {
+  return crypto
+    .createHmac("sha256", getResetSecret())
+    .update(code.trim())
+    .digest("hex");
+}
+
+export function verifyResetCode(
+  code: string,
+  storedHash?: string,
+  expiresAt?: string
+): { valid: true } | { valid: false; error: string } {
+  if (!storedHash || !expiresAt) {
+    return { valid: false, error: "No active password reset code found. Please request a new one." };
+  }
+  if (Date.now() > Date.parse(expiresAt)) {
+    return { valid: false, error: "Your password reset code has expired. Please request a new one." };
+  }
+  const candidateHash = hashResetCode(code);
+  const a = Buffer.from(candidateHash, "utf-8");
+  const b = Buffer.from(storedHash, "utf-8");
+  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
+    return { valid: false, error: "Invalid 6-digit password reset code." };
+  }
+  return { valid: true };
+}

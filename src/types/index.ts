@@ -39,6 +39,8 @@ export interface Profile {
   id: string;
   email: string;
   password?: string;
+  resetCodeHash?: string;
+  resetCodeExpiresAt?: string;
   fullName: string;
   phone: string;
   avatarUrl?: string;

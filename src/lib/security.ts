@@ -55,8 +55,15 @@ export function isPasswordHashed(stored?: string): boolean {
 /**
  * Strip password fields before sending any Profile to the browser.
  */
-export function sanitizeProfile(profile: Profile): Omit<Profile, "password"> {
-  const { password: _removed, ...safe } = profile;
+export function sanitizeProfile(
+  profile: Profile
+): Omit<Profile, "password" | "resetCodeHash" | "resetCodeExpiresAt"> {
+  const {
+    password: _removed,
+    resetCodeHash: _removedHash,
+    resetCodeExpiresAt: _removedExp,
+    ...safe
+  } = profile;
   return safe;
 }
 

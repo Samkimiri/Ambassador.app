@@ -160,6 +160,52 @@ describe("Resend Email & Password Reset", () => {
     expect(isPasswordHashed(updatedUser?.password)).toBe(true);
     expect(verifyPassword("NewSecurePassword456", updatedUser?.password)).toBe(true);
 
+    // Also test 6-digit reset code flow
+    expect(typeof forgotData.devResetCode).toBe("string");
+    expect(forgotData.devResetCode).toMatch(/^\d{6}$/);
+
+    const forgotRes2 = await forgotPasswordRoute(
+      new Request("https://scds.test/api/auth/forgot-password", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          origin: "https://scds.test",
+          "x-forwarded-for": "10.9.9.9",
+        },
+        body: JSON.stringify({ email: testEmail }),
+      })
+    );
+    const forgotData2 = await forgotRes2.json();
+    expect(forgotData2.devResetCode).toMatch(/^\d{6}$/);
+
+    const wrongCodeRes = await resetPasswordRoute(
+      new Request("https://scds.test/api/auth/reset-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-forwarded-for": "10.9.9.9" },
+        body: JSON.stringify({
+          email: testEmail,
+          code: "000000",
+          newPassword: "AnotherPassword789",
+        }),
+      })
+    );
+    expect(wrongCodeRes.status).toBe(400);
+
+    const codeResetRes = await resetPasswordRoute(
+      new Request("https://scds.test/api/auth/reset-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-forwarded-for": "10.9.9.9" },
+        body: JSON.stringify({
+          email: testEmail,
+          code: forgotData2.devResetCode,
+          newPassword: "CodeResetPassword789",
+        }),
+      })
+    );
+    expect(codeResetRes.status).toBe(200);
+    const afterCodeUser = getPersistentDb().profiles.find((p) => p.email === testEmail);
+    expect(verifyPassword("CodeResetPassword789", afterCodeUser?.password)).toBe(true);
+
     // Fallback check when RESEND_API_KEY is unset
     const mockSend = await sendEmail({
       to: testEmail,
