@@ -39,8 +39,8 @@ export default function DashboardLeaderboardPage() {
         </select>
       </div>
 
-      <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-        <table className="w-full text-left border-collapse text-xs">
+      <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-x-auto">
+        <table className="w-full min-w-[520px] text-left border-collapse text-xs">
           <thead>
             <tr className="border-b border-slate-200 bg-slate-50 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
               <th className="py-3.5 px-4">Rank</th>

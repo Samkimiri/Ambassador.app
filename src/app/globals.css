@@ -18,11 +18,13 @@
   html {
     color: var(--color-text);
     background-color: var(--color-surface);
+    overflow-x: hidden;
   }
 
   body {
     color: var(--color-text);
     background-color: var(--color-surface);
+    overflow-x: hidden;
     @apply antialiased selection:bg-[#0048E8] selection:text-white;
   }
 

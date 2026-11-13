@@ -784,13 +784,35 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     reviewNotes?: string
   ) => {
     if (!currentUser) throw new Error("Not signed in.");
-    const { nextState } = reviewAmbassadorApplicationOp(db, {
+    const { nextState, ambassador } = reviewAmbassadorApplicationOp(db, {
       actor: currentUser,
       applicationId,
       decision,
       reviewNotes,
     });
     await broadcastDbChange(nextState);
+
+    if (decision === "approved") {
+      const approvedApp = nextState.applications.find((a) => a.id === applicationId);
+      const targetEmail = ambassador?.email || approvedApp?.email;
+      const targetName = ambassador?.fullName || approvedApp?.fullName || "Ambassador";
+      const referralCode = ambassador?.referralCode || "SCDS-AMB";
+      if (targetEmail && typeof window !== "undefined") {
+        fetch("/api/email/send", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            type: "application_approved",
+            to: targetEmail,
+            fullName: targetName,
+            referralCode,
+            dashboardUrl: `${window.location.origin}/dashboard`,
+          }),
+        }).catch((err) => {
+          console.warn("Approval email dispatch failed:", err);
+        });
+      }
+    }
   };
 
   const deleteApplication = async (applicationId: string) => {

@@ -217,6 +217,43 @@ export function buildPayoutDisbursedEmail(params: {
 }
 
 /**
+ * 4. Password Reset Email
+ */
+export function buildPasswordResetEmail(params: {
+  fullName: string;
+  resetUrl: string;
+  expiresInMinutes?: number;
+}): EmailMessage {
+  const expires = params.expiresInMinutes ?? 30;
+  const html = wrapInScdsEmailLayout(
+    "Reset Your Password",
+    `<p>Dear <strong>${params.fullName}</strong>,</p>
+     <p>We received a request to reset the password for your <strong>SCDS Ambassador Hub</strong> account.</p>
+     <p style="text-align: center;">
+       <a href="${params.resetUrl}" class="button">Reset My Password &rarr;</a>
+     </p>
+     <div class="highlight-card">
+       <p style="margin: 0 0 6px 0; font-weight: 700; color: #0B1F50;">Security Details:</p>
+       <p style="margin: 0; font-size: 13px; color: #4B5563;">
+         This link will expire in <strong>${expires} minutes</strong>. If you did not request a password reset, you can safely ignore this email.
+       </p>
+       <p style="margin: 10px 0 0 0; font-size: 12px; color: #6B7280; word-break: break-all;">
+         Or copy and paste this link: <a href="${params.resetUrl}" style="color: #0048E8;">${params.resetUrl}</a>
+       </p>
+     </div>
+     <p>Best regards,<br><strong>SCDS Ambassador Hub Security Team</strong></p>`
+  );
+
+  return {
+    to: "",
+    toName: params.fullName,
+    subject: "Reset Your SCDS Ambassador Hub Password",
+    html,
+    text: `Reset your SCDS Ambassador Hub password using this link (expires in ${expires} minutes): ${params.resetUrl}`,
+  };
+}
+
+/**
  * Dispatch an email message via Resend, Sendgrid, or safe dev mock fallback
  */
 export async function sendEmail(message: EmailMessage): Promise<EmailSendResult> {

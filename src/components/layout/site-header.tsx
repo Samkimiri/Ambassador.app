@@ -29,17 +29,17 @@ export function PublicNavbar() {
 
   return (
     <header className="sticky top-0 z-40 border-b border-gray-200 bg-white/95 backdrop-blur">
-      <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3.5 sm:px-6">
-        <Link href="/" className="flex items-center gap-3 group">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-600 text-white font-extrabold text-lg shadow-sm border-2 border-gold-400">
+      <div className="mx-auto flex max-w-7xl items-center justify-between gap-2 px-4 py-3.5 sm:px-6">
+        <Link href="/" className="flex items-center gap-2.5 sm:gap-3 group min-w-0">
+          <div className="flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-xl bg-brand-600 text-white font-extrabold text-base sm:text-lg shadow-sm border-2 border-gold-400">
             SC
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="font-extrabold tracking-tight text-navy-900 text-base group-hover:text-brand-600 transition">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+              <span className="font-extrabold tracking-tight text-navy-900 text-sm sm:text-base group-hover:text-brand-600 transition truncate">
                 SCDS.Design School
               </span>
-              <span className="rounded-md bg-gold-400 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-navy-900">
+              <span className="rounded-md bg-gold-400 px-1.5 sm:px-2 py-0.5 text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-navy-900 shrink-0">
                 Ambassador Hub
               </span>
             </div>

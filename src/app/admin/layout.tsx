@@ -94,19 +94,27 @@ export default function AdminLayout({
     <div className="min-h-screen flex flex-col lg:flex-row bg-slate-50">
       <aside className="w-full lg:w-64 shrink-0 border-b lg:border-b-0 lg:border-r border-slate-200 bg-slate-950 text-slate-300 flex flex-col justify-between">
         <div className="p-4 space-y-4">
-          <Link href="/admin" className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-600 text-gold-400 font-extrabold text-sm">
-              SC
-            </div>
-            <div>
-              <div className="text-sm font-bold text-white">
-                SCDS Admin Console
+          <div className="flex items-center justify-between gap-2">
+            <Link href="/admin" className="flex items-center gap-2.5 min-w-0">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand-600 text-gold-400 font-extrabold text-sm">
+                SC
               </div>
-              <div className="text-[11px] text-slate-400">
-                {currentUser.fullName}
+              <div className="min-w-0">
+                <div className="text-sm font-bold text-white truncate">
+                  SCDS Admin Console
+                </div>
+                <div className="text-[11px] text-slate-400 truncate">
+                  {currentUser.fullName}
+                </div>
               </div>
-            </div>
-          </Link>
+            </Link>
+            <Link
+              href="/"
+              className="lg:hidden shrink-0 rounded-lg border border-slate-700 px-2.5 py-1.5 text-xs font-medium text-slate-300 hover:bg-slate-900 hover:text-white"
+            >
+              Site
+            </Link>
+          </div>
 
           <nav className="flex lg:flex-col gap-1 overflow-x-auto pb-1 lg:pb-0">
             {ADMIN_NAV.map((item) => {
@@ -161,7 +169,7 @@ export default function AdminLayout({
         </div>
       </aside>
 
-      <main className="flex-1 p-4 sm:p-8 max-w-7xl w-full mx-auto">
+      <main className="flex-1 min-w-0 p-4 sm:p-8 max-w-7xl w-full mx-auto">
         {children}
       </main>
     </div>

@@ -295,20 +295,35 @@ export default function DashboardLayout({
       {/* Sidebar */}
       <aside className="w-full lg:w-64 shrink-0 border-b lg:border-b-0 lg:border-r border-slate-200 bg-white flex flex-col justify-between">
         <div className="p-4 sm:p-5 space-y-5">
-          <div className="flex items-center justify-between">
-            <Link href="/" className="flex items-center gap-2.5">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-600 text-gold-400 font-extrabold text-sm shadow-sm">
+          <div className="flex items-center justify-between gap-2">
+            <Link href="/" className="flex items-center gap-2.5 min-w-0">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand-600 text-gold-400 font-extrabold text-sm shadow-sm">
                 SC
               </div>
-              <div>
-                <div className="text-sm font-bold text-navy-900">
+              <div className="min-w-0">
+                <div className="text-sm font-bold text-navy-900 truncate">
                   SCDS Ambassador
                 </div>
-                <div className="text-[11px] text-slate-500">
+                <div className="text-[11px] text-slate-500 truncate">
                   Code: <span className="font-mono font-bold text-brand-600">{activeAmb.referralCode}</span>
                 </div>
               </div>
             </Link>
+            <div className="flex lg:hidden items-center gap-1.5 shrink-0">
+              <Link
+                href="/"
+                className="rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100"
+              >
+                Site
+              </Link>
+              <button
+                type="button"
+                onClick={handleSignOut}
+                className="rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100"
+              >
+                Sign Out
+              </button>
+            </div>
           </div>
 
           <div className="rounded-xl border border-brand-100 bg-surface p-3 space-y-1.5">
@@ -379,7 +394,7 @@ export default function DashboardLayout({
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 p-4 sm:p-8 max-w-6xl w-full mx-auto">
+      <main className="flex-1 min-w-0 p-4 sm:p-8 max-w-6xl w-full mx-auto">
         {children}
       </main>
     </div>
