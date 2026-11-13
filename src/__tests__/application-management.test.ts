@@ -311,4 +311,61 @@ describe("Ambassador Application Management, Deletion & Candidate Readiness Suit
       else process.env.SUPABASE_SERVICE_ROLE_KEY = prevServiceKey;
     }
   });
+
+  it("9. Register payload passes schema -> POST /api/applications -> GET /api/applications returns pending first", async () => {
+    const { ambassadorApplicationSchema } = await import("@/lib/validations");
+    const uniqueEmail = `register.e2e.${Date.now()}@test.ac.ke`;
+    const registerFormInput = {
+      fullName: "Register Flow Applicant",
+      email: uniqueEmail,
+      phone: "0744444444",
+      password: "Password123!",
+      county: "Nairobi",
+      institution: "TUK",
+      occupation: "University / College Student",
+      academicYear: "Year 2 Undergraduate",
+      studyField: "Graphic Design, Multimedia or Tech",
+      audienceSize: "100 - 500 peers / campus contacts",
+      weeklyHours: "5 - 10 hours/week",
+      deviceReadiness: "Laptop & Smartphone with stable 4G/Wi-Fi",
+      familiarTools: ["Adobe Photoshop", "CapCut Video Editing"],
+      pastAmbassadorExperience: "Campus Club / Society Leader",
+      resumeUrl: "",
+      instagram: "",
+      linkedin: "",
+      tiktok: "",
+      twitter: "",
+      portfolio: "",
+      promotionStrategy: "WhatsApp Student Groups & Status",
+      targetAudience: "University / College Undergraduates",
+      motivation: "Excited to represent SCDS across my campus network.",
+      experience: "Led student design and creative marketing clubs.",
+      acceptedTerms: true,
+    };
+
+    const parsed = ambassadorApplicationSchema.safeParse(registerFormInput);
+    expect(parsed.success).toBe(true);
+    if (!parsed.success) return;
+
+    const postReq = new NextRequest("http://localhost:3000/api/applications", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-forwarded-for": "10.7.7.7" },
+      body: JSON.stringify(parsed.data),
+    });
+
+    const postRes = await postApplications(postReq);
+    expect(postRes.status).toBe(201);
+    const postJson = await postRes.json();
+    expect(postJson.ok).toBe(true);
+    expect(postJson.profile.password).toBeUndefined();
+
+    const getRes = await getApplications();
+    expect(getRes.status).toBe(200);
+    const getJson = await getRes.json();
+    const idx = getJson.applications.findIndex(
+      (a: { email: string }) => a.email === uniqueEmail.toLowerCase()
+    );
+    expect(idx).toBeGreaterThanOrEqual(0);
+    expect(getJson.applications[idx].status).toBe("pending");
+  });
 });

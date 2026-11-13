@@ -3,7 +3,7 @@
 // Organization: Sam Creative Design School (SCDS)
 // ==============================================================================
 
-const CACHE_VERSION = "scds-ambassador-pwa-v1";
+const CACHE_VERSION = "scds-ambassador-pwa-v2";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const PAGES_CACHE = `${CACHE_VERSION}-pages`;
 const OFFLINE_FALLBACK_URL = "/offline";
@@ -15,18 +15,6 @@ const PRECACHE_ROUTES = [
   "/courses",
   "/join",
   "/ambassadors",
-  "/auth/login",
-  "/auth/register",
-  "/dashboard",
-  "/dashboard/referrals",
-  "/dashboard/campaigns",
-  "/dashboard/resources",
-  "/dashboard/rewards",
-  "/dashboard/leaderboard",
-  "/dashboard/notifications",
-  "/dashboard/profile",
-  "/dashboard/support",
-  "/admin",
   "/manifest.json",
   "/icon.svg",
 ];
@@ -80,6 +68,12 @@ self.addEventListener("fetch", (event) => {
 
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) {
+    return;
+  }
+
+  // Always bypass cache (Network-Only) for API routes and Auth pages
+  if (url.pathname.startsWith("/api/") || url.pathname.startsWith("/auth/")) {
+    event.respondWith(fetch(request));
     return;
   }
 

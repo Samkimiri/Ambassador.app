@@ -160,13 +160,13 @@ export async function POST(req: NextRequest) {
 
     // Persist to Supabase (both app_state and applications table)
     if (isSupabaseServiceConfigured()) {
-      const [stateSaved] = await Promise.all([
+      const [stateSaved, rowSaved] = await Promise.all([
         saveSupabaseState(merged),
         upsertSupabaseApplication(application),
       ]);
-      if (!stateSaved) {
+      if (!stateSaved && !rowSaved) {
         console.error(
-          `[CRITICAL] Failed to persist application ${application.id} to Supabase.`
+          `[POST /api/applications] Failed to persist application ${application.id} (${application.email}) to Supabase.`
         );
         return NextResponse.json(
           {
@@ -176,6 +176,13 @@ export async function POST(req: NextRequest) {
           { status: 502 }
         );
       }
+      console.info(
+        `[POST /api/applications] Saved application ${application.id} (${application.email}) | app_state=${stateSaved} | applications_table=${rowSaved}`
+      );
+    } else {
+      console.info(
+        `[POST /api/applications] Saved application ${application.id} (${application.email}) to local/test store.`
+      );
     }
 
     return NextResponse.json(

@@ -100,12 +100,19 @@ export async function upsertSupabaseApplication(
     );
 
     if (error) {
-      console.warn("Could not upsert to Supabase applications table:", error.message);
+      console.error("[Supabase] Could not upsert to public.applications:", {
+        code: error.code,
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        applicationId: app.id,
+      });
       return false;
     }
+    console.info(`[Supabase] Upserted application ${app.id} (${app.email}) into public.applications.`);
     return true;
   } catch (err) {
-    console.warn("Failed to upsert to Supabase applications table:", err);
+    console.error("[Supabase] Failed to upsert to public.applications:", err);
     return false;
   }
 }

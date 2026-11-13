@@ -752,34 +752,29 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const submitApplication = async (
     input: Parameters<typeof submitAmbassadorApplicationOp>[1]
   ) => {
-    // 1. Direct server persistence via dedicated API
-    let serverApp: AmbassadorApplication | null = null;
-    let serverProfile: Profile | null = null;
-    const isOffline =
-      typeof navigator !== "undefined" && navigator.onLine === false;
+    // 1. Always persist on the server via POST /api/applications (never localStorage fallback)
+    const res = await fetch("/api/applications", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+    });
+    const json = (await res.json().catch(() => null)) as {
+      error?: string;
+      application?: AmbassadorApplication;
+      profile?: Profile;
+    } | null;
 
-    if (!isOffline) {
-      const res = await fetch("/api/applications", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(input),
-      });
-      const json = (await res.json().catch(() => null)) as {
-        error?: string;
-        application?: AmbassadorApplication;
-        profile?: Profile;
-      } | null;
-      if (!res.ok) {
-        throw new Error(
-          json?.error ||
-            "Unable to submit your application to the server. Please try again."
-        );
-      }
-      serverApp = json?.application || null;
-      serverProfile = json?.profile || null;
+    if (!res.ok || !json?.application) {
+      throw new Error(
+        json?.error ||
+          "Unable to submit your application to the server. Please check your connection and try again."
+      );
     }
 
-    // 2. Client-side operation & broadcast sync
+    const serverApp = json.application;
+    const serverProfile = json.profile;
+
+    // 2. Reflect confirmed server application in local UI state & notify live listeners
     const { nextState, application, profile } = submitAmbassadorApplicationOp(
       db,
       input
