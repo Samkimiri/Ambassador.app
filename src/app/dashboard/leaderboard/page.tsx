@@ -8,11 +8,19 @@ import { LevelBadge } from "@/components/ui/status-badge";
 export default function DashboardLeaderboardPage() {
   const { db, currentAmbassador } = useApp();
   const [period, setPeriod] = useState<"all_time" | "current_month">("all_time");
+  const [visibleLimit, setVisibleLimit] = useState(50);
 
   const amb = currentAmbassador || db.ambassadors[0];
+  const verifiedByAmb = new Map<string, number>();
+  for (const r of db.referrals) {
+    if (r.status === "payment_verified") {
+      verifiedByAmb.set(r.ambassadorId, (verifiedByAmb.get(r.ambassadorId) || 0) + 1);
+    }
+  }
   const ranked = [...db.ambassadors]
     .filter((a) => a.isActive)
     .sort((a, b) => b.totalPoints - a.totalPoints);
+  const visibleRanked = ranked.slice(0, visibleLimit);
 
   return (
     <div className="space-y-6">
@@ -52,11 +60,8 @@ export default function DashboardLeaderboardPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {ranked.map((item, idx) => {
-              const verified = db.referrals.filter(
-                (r) =>
-                  r.ambassadorId === item.id && r.status === "payment_verified"
-              ).length;
+            {visibleRanked.map((item, idx) => {
+              const verified = verifiedByAmb.get(item.id) || 0;
               const isMe = item.id === amb.id;
               return (
                 <tr
@@ -97,6 +102,17 @@ export default function DashboardLeaderboardPage() {
           </tbody>
         </table>
       </div>
+      {ranked.length > visibleLimit && (
+        <div className="flex justify-center">
+          <button
+            type="button"
+            onClick={() => setVisibleLimit((n) => n + 50)}
+            className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 shadow-sm"
+          >
+            Show more ambassadors ({visibleRanked.length} of {ranked.length})
+          </button>
+        </div>
+      )}
     </div>
   );
 }

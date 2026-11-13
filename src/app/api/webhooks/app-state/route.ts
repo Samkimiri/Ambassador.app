@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getPersistentDb, savePersistentDb } from "@/lib/server-store";
-import { saveSupabaseState } from "@/lib/supabase-store";
-import { isSupabaseConfigured } from "@/lib/supabase";
+import { getSyncedServerDb, savePersistentDb, saveSyncedServerDb } from "@/lib/server-store";
 import { AppDatabaseState } from "@/lib/seed-data";
 
 export const dynamic = "force-dynamic";
@@ -46,7 +44,7 @@ export async function POST(req: NextRequest) {
 
     // 2. Handle direct webhook event dispatch (e.g. from mobile or external form)
     if (payload.event === "application_submitted" && payload.application) {
-      const current = getPersistentDb();
+      const current = await getSyncedServerDb();
       const existing = current.applications.some(
         (a) => a.id === payload.application.id
       );
@@ -56,10 +54,7 @@ export async function POST(req: NextRequest) {
           ...current,
           applications: [payload.application, ...current.applications],
         };
-        savePersistentDb(nextState);
-        if (isSupabaseConfigured()) {
-          await saveSupabaseState(nextState);
-        }
+        await saveSyncedServerDb(nextState);
       }
 
       return NextResponse.json({
@@ -71,10 +66,7 @@ export async function POST(req: NextRequest) {
 
     // 3. Fallback: If raw state was directly posted to the webhook endpoint
     if (payload.applications && Array.isArray(payload.applications)) {
-      savePersistentDb(payload as AppDatabaseState);
-      if (isSupabaseConfigured()) {
-        await saveSupabaseState(payload as AppDatabaseState);
-      }
+      await saveSyncedServerDb(payload as AppDatabaseState);
       return NextResponse.json({
         success: true,
         type: "state_webhook_applied",

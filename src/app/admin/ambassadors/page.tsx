@@ -50,6 +50,18 @@ export default function AdminAmbassadorsDirectoryPage() {
   const [blockModalAmbassador, setBlockModalAmbassador] =
     useState<AmbassadorProfile | null>(null);
   const [blockReasonText, setBlockReasonText] = useState("");
+  const [visibleLimit, setVisibleLimit] = useState(50);
+
+  const referralStatsByAmb = useMemo(() => {
+    const map = new Map<string, { total: number; verified: number }>();
+    for (const r of db.referrals || []) {
+      const curr = map.get(r.ambassadorId) || { total: 0, verified: 0 };
+      curr.total += 1;
+      if (r.status === "payment_verified") curr.verified += 1;
+      map.set(r.ambassadorId, curr);
+    }
+    return map;
+  }, [db.referrals]);
 
   // Combine official ambassadors directory with any approved applicants and active ambassador accounts
   const allAmbassadors = useMemo(() => {
@@ -444,9 +456,10 @@ export default function AdminAmbassadorsDirectoryPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {filtered.map((amb) => {
-                const refs = db.referrals.filter((r) => r.ambassadorId === amb.id);
-                const verified = refs.filter((r) => r.status === "payment_verified").length;
+              {filtered.slice(0, visibleLimit).map((amb) => {
+                const stat = referralStatsByAmb.get(amb.id) || { total: 0, verified: 0 };
+                const refsLength = stat.total;
+                const verified = stat.verified;
 
                 return (
                   <tr
@@ -488,7 +501,7 @@ export default function AdminAmbassadorsDirectoryPage() {
                       </span>
                     </td>
                     <td className="py-3.5 px-4 font-medium text-slate-700">
-                      {amb.clickCount} clicks · {refs.length} leads ·{" "}
+                      {amb.clickCount} clicks · {refsLength} leads ·{" "}
                       <span className="text-emerald-700 font-bold">
                         {verified} verified
                       </span>
@@ -553,6 +566,17 @@ export default function AdminAmbassadorsDirectoryPage() {
             </tbody>
           </table>
         </div>
+        {filtered.length > visibleLimit && (
+          <div className="border-t border-slate-100 bg-slate-50 px-4 py-3 flex justify-center">
+            <button
+              type="button"
+              onClick={() => setVisibleLimit((n) => n + 50)}
+              className="rounded-xl border border-slate-300 bg-white px-5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 transition"
+            >
+              Show more ambassadors ({Math.min(visibleLimit, filtered.length)} of {filtered.length})
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Ambassador Full Professional Dossier Modal */}

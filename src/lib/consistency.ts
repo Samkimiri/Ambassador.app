@@ -152,15 +152,31 @@ export function ensureStateConsistency(state: AppDatabaseState): AppDatabaseStat
     profiles[adminIdx].status = "active";
   }
 
-  // 2. Synchronize approved real applications with profiles and ambassadors
+  // 2. Synchronize approved real applications with profiles and ambassadors (O(N) via Maps/Sets)
   const now = new Date().toISOString();
+  const profileById = new Map<string, Profile>();
+  const profileByEmail = new Map<string, Profile>();
+  for (const p of profiles) {
+    if (p.id) profileById.set(p.id, p);
+    if (p.email) profileByEmail.set(p.email.trim().toLowerCase(), p);
+  }
+
+  const ambByUserId = new Map<string, AmbassadorProfile>();
+  const ambByEmail = new Map<string, AmbassadorProfile>();
+  const existingCodeSet = new Set<string>();
+  for (const a of ambassadors) {
+    if (a.userId) ambByUserId.set(a.userId, a);
+    if (a.email) ambByEmail.set(a.email.trim().toLowerCase(), a);
+    if (a.referralCode) existingCodeSet.add(a.referralCode.toUpperCase());
+  }
+
   for (const app of applications) {
     const cleanEmail = app.email.trim().toLowerCase();
 
     // Ensure matching user profile exists
-    let userProfile = profiles.find(
-      (p) => (app.userId && p.id === app.userId) || p.email.toLowerCase() === cleanEmail
-    );
+    let userProfile =
+      (app.userId ? profileById.get(app.userId) : undefined) ||
+      profileByEmail.get(cleanEmail);
 
     if (!userProfile) {
       userProfile = {
@@ -179,29 +195,25 @@ export function ensureStateConsistency(state: AppDatabaseState): AppDatabaseStat
         updatedAt: now,
       };
       profiles.unshift(userProfile);
+      profileById.set(userProfile.id, userProfile);
+      profileByEmail.set(cleanEmail, userProfile);
     }
+
+    const matchingAmb =
+      ambByUserId.get(userProfile.id) || ambByEmail.get(cleanEmail);
 
     // Preserve blocked status
     const isUserBlocked =
       userProfile.status === "blocked" ||
       userProfile.status === "suspended" ||
-      ambassadors.some(
-        (a) =>
-          ((a.userId && a.userId === userProfile!.id) ||
-            a.email.toLowerCase() === cleanEmail) &&
-          (a.isBlocked || !a.isActive)
-      );
+      Boolean(matchingAmb && (matchingAmb.isBlocked || !matchingAmb.isActive));
 
     if (isUserBlocked) {
       userProfile.status = "blocked";
     } else {
       // If active ambassador or marked approved, lock in approved status
-      const hasActiveAmb = ambassadors.some(
-        (a) =>
-          ((a.userId && a.userId === userProfile!.id) ||
-            a.email.toLowerCase() === cleanEmail) &&
-          a.isActive &&
-          !a.isBlocked
+      const hasActiveAmb = Boolean(
+        matchingAmb && matchingAmb.isActive && !matchingAmb.isBlocked
       );
       if (
         (hasActiveAmb ||
@@ -220,15 +232,12 @@ export function ensureStateConsistency(state: AppDatabaseState): AppDatabaseStat
       userProfile.role = "ambassador";
       userProfile.status = "active";
 
-      const ambIdx = ambassadors.findIndex(
-        (a) =>
-          (userProfile && a.userId === userProfile.id) ||
-          a.email.toLowerCase() === cleanEmail
-      );
-
-      if (ambIdx === -1) {
-        const existingCodes = ambassadors.map((a) => a.referralCode);
-        const referralCode = generateReferralCode(app.fullName, existingCodes);
+      if (!matchingAmb) {
+        const referralCode = generateReferralCode(
+          app.fullName,
+          Array.from(existingCodeSet)
+        );
+        existingCodeSet.add(referralCode.toUpperCase());
         const newAmb: AmbassadorProfile = {
           id: `amb-${userProfile.id}`,
           userId: userProfile.id,
@@ -259,21 +268,23 @@ export function ensureStateConsistency(state: AppDatabaseState): AppDatabaseStat
           createdAt: app.createdAt || now,
         };
         ambassadors.unshift(newAmb);
+        ambByUserId.set(userProfile.id, newAmb);
+        ambByEmail.set(cleanEmail, newAmb);
       } else {
-        if (!ambassadors[ambIdx].isBlocked) {
-          ambassadors[ambIdx].isActive = true;
+        if (!matchingAmb.isBlocked) {
+          matchingAmb.isActive = true;
         }
-        if (!ambassadors[ambIdx].socialLinks && app.socialLinks) {
-          ambassadors[ambIdx].socialLinks = app.socialLinks;
+        if (!matchingAmb.socialLinks && app.socialLinks) {
+          matchingAmb.socialLinks = app.socialLinks;
         }
-        if (!ambassadors[ambIdx].promotionStrategy && app.promotionStrategy) {
-          ambassadors[ambIdx].promotionStrategy = app.promotionStrategy;
+        if (!matchingAmb.promotionStrategy && app.promotionStrategy) {
+          matchingAmb.promotionStrategy = app.promotionStrategy;
         }
-        if (!ambassadors[ambIdx].targetAudience && app.targetAudience) {
-          ambassadors[ambIdx].targetAudience = app.targetAudience;
+        if (!matchingAmb.targetAudience && app.targetAudience) {
+          matchingAmb.targetAudience = app.targetAudience;
         }
-        if (!ambassadors[ambIdx].credentialId) {
-          ambassadors[ambIdx].credentialId = generateCredentialId(app.id);
+        if (!matchingAmb.credentialId) {
+          matchingAmb.credentialId = generateCredentialId(app.id);
         }
       }
     }
@@ -286,15 +297,16 @@ export function ensureStateConsistency(state: AppDatabaseState): AppDatabaseStat
       (prof.status === "active" && prof.role !== "super_admin" && prof.role !== "learner")
     ) {
       const cleanEmail = prof.email.trim().toLowerCase();
-      const ambIdx = ambassadors.findIndex(
-        (a) =>
-          (prof.id && a.userId === prof.id) ||
-          a.email.toLowerCase() === cleanEmail
-      );
-      if (ambIdx === -1) {
-        const existingCodes = ambassadors.map((a) => a.referralCode);
-        const referralCode = generateReferralCode(prof.fullName || "Ambassador", existingCodes);
-        ambassadors.unshift({
+      const matchingAmb =
+        (prof.id ? ambByUserId.get(prof.id) : undefined) ||
+        ambByEmail.get(cleanEmail);
+      if (!matchingAmb) {
+        const referralCode = generateReferralCode(
+          prof.fullName || "Ambassador",
+          Array.from(existingCodeSet)
+        );
+        existingCodeSet.add(referralCode.toUpperCase());
+        const newAmb: AmbassadorProfile = {
           id: `amb-${prof.id}`,
           userId: prof.id,
           fullName: prof.fullName,
@@ -313,18 +325,21 @@ export function ensureStateConsistency(state: AppDatabaseState): AppDatabaseStat
           institution: "",
           occupation: "Ambassador",
           bio: "Official SCDS Ambassador.",
-          credentialId: `SCDS-AMB-${Date.now().toString().slice(-4)}`,
+          credentialId: generateCredentialId(prof.id),
           codeOfConductAgreed: true,
           isActive: prof.status !== "blocked",
           isBlocked: prof.status === "blocked",
           clickCount: 0,
           badgeIds: [],
           createdAt: prof.createdAt || now,
-        });
+        };
+        ambassadors.unshift(newAmb);
+        ambByUserId.set(prof.id, newAmb);
+        ambByEmail.set(cleanEmail, newAmb);
       } else {
         if (prof.status === "blocked") {
-          ambassadors[ambIdx].isActive = false;
-          ambassadors[ambIdx].isBlocked = true;
+          matchingAmb.isActive = false;
+          matchingAmb.isBlocked = true;
         }
       }
     }
@@ -355,9 +370,12 @@ export function ensureStateConsistency(state: AppDatabaseState): AppDatabaseStat
   const cleanMarketingAssets = (state.marketingAssets || []).filter((m) => isActiveEntity(m.id));
   const cleanAnnouncements = (state.announcements || []).filter((a) => isActiveEntity(a.id));
 
-  const cleanNotifications = (state.notifications || []).filter(
-    (n) => !SEEDED_DEMO_USER_IDS.has(n.userId)
-  );
+  const cleanNotifications = (state.notifications || [])
+    .filter((n) => !SEEDED_DEMO_USER_IDS.has(n.userId))
+    .slice(0, 200);
+  const cleanAuditLogs = Array.isArray(state.auditLogs)
+    ? state.auditLogs.slice(0, 500)
+    : [];
 
   return {
     ...state,
@@ -372,6 +390,7 @@ export function ensureStateConsistency(state: AppDatabaseState): AppDatabaseStat
     marketingAssets: cleanMarketingAssets,
     announcements: cleanAnnouncements,
     notifications: cleanNotifications,
+    auditLogs: cleanAuditLogs,
     trash: cleanTrash,
     deletedApplicationIds: Array.from(deletedAppSet),
     deletedUserIds: Array.from(deletedUserSet),

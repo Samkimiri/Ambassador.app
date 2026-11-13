@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { learnerEnquirySchema } from "@/lib/validations";
 import { submitLearnerEnquiryOp } from "@/lib/store-engine";
-import { getPersistentDb, savePersistentDb } from "@/lib/server-store";
+import { getSyncedServerDb, saveSyncedServerDb } from "@/lib/server-store";
 
 // Simple in-memory rate limit bucket per IP
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
@@ -33,12 +33,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const currentDb = getPersistentDb();
+    const currentDb = await getSyncedServerDb();
     const { nextState, referral } = submitLearnerEnquiryOp(
       currentDb,
       parsed.data
     );
-    savePersistentDb(nextState);
+    await saveSyncedServerDb(nextState);
 
     return NextResponse.json({ ok: true, referral }, { status: 201 });
   } catch (err) {

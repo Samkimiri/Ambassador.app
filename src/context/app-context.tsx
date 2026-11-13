@@ -459,7 +459,19 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
     } catch {
-      // Ignore
+      // Retry with trimmed logs/notifications if browser storage quota (~5MB) is reached
+      try {
+        localStorage.setItem(
+          STORAGE_KEY,
+          JSON.stringify({
+            ...next,
+            auditLogs: (next.auditLogs || []).slice(0, 50),
+            notifications: (next.notifications || []).slice(0, 50),
+          })
+        );
+      } catch {
+        // Ignore if storage is completely unavailable
+      }
     }
 
     // 1. Instant WebSocket broadcast to any active admin / ambassador windows
@@ -475,14 +487,23 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
-    // 2. Persist to server / Supabase cloud database
+    // 2. Persist to server / Supabase cloud database and merge any concurrent submissions
     try {
-      await fetch("/api/sync", {
+      const res = await fetch("/api/sync", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(next),
         keepalive: true,
       });
+      if (res.ok) {
+        const json = (await res.json().catch(() => null)) as {
+          ok?: boolean;
+          state?: AppDatabaseState;
+        } | null;
+        if (json?.state && Array.isArray(json.state.applications)) {
+          applyServerState(json.state);
+        }
+      }
     } catch (err) {
       console.warn("Could not sync with server immediately:", err);
     }

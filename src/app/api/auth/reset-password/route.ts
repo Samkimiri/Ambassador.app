@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getPersistentDb, savePersistentDb } from "@/lib/server-store";
+import { getSyncedServerDb, saveSyncedServerDb } from "@/lib/server-store";
 import { verifyPasswordResetToken } from "@/lib/password-reset";
 
 export async function POST(request: Request) {
@@ -31,7 +31,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const db = getPersistentDb();
+    const db = await getSyncedServerDb();
     const targetEmail = verification.email.toLowerCase().trim();
     const existing = db.profiles.find(
       (p) => p.email.toLowerCase().trim() === targetEmail
@@ -54,7 +54,7 @@ export async function POST(request: Request) {
       ),
     };
 
-    savePersistentDb(nextState);
+    await saveSyncedServerDb(nextState);
 
     return NextResponse.json({
       ok: true,

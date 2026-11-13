@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getPersistentDb } from "@/lib/server-store";
+import { getSyncedServerDb } from "@/lib/server-store";
 import { buildPasswordResetEmail, sendEmail } from "@/lib/email";
 import { createPasswordResetToken } from "@/lib/password-reset";
 import { getAppUrl } from "@/lib/utils";
@@ -17,7 +17,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const db = getPersistentDb();
+    const db = await getSyncedServerDb();
     const profile = db.profiles.find(
       (p) => p.email.toLowerCase().trim() === email
     );

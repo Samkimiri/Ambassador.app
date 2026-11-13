@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
       await saveSupabaseState(merged);
     }
 
-    return NextResponse.json({ ok: true }, { status: 200 });
+    return NextResponse.json({ ok: true, state: merged }, { status: 200 });
   } catch (err) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Failed to sync state." },

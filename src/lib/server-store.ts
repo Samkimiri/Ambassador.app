@@ -3,6 +3,8 @@ import path from "path";
 import os from "os";
 import { AppDatabaseState, INITIAL_DATABASE_STATE } from "@/lib/seed-data";
 import { ensureStateConsistency } from "@/lib/consistency";
+import { isSupabaseConfigured } from "@/lib/supabase";
+import { fetchSupabaseState, saveSupabaseState } from "@/lib/supabase-store";
 import {
   AmbassadorApplication,
   AmbassadorProfile,
@@ -100,6 +102,9 @@ export function mergeDatabaseStates(
         (!existing.reviewedAt || new Date(app.reviewedAt) > new Date(existing.reviewedAt))
       ) {
         appMap.set(app.id, { ...existing, ...app });
+      } else if (existing.reviewedAt && !app.reviewedAt) {
+        // Never let a stale unreviewed payload overwrite an already-reviewed decision
+        appMap.set(app.id, { ...app, ...existing });
       } else {
         appMap.set(app.id, { ...existing, ...app });
       }
@@ -278,6 +283,40 @@ export function savePersistentDb(state: AppDatabaseState): AppDatabaseState {
     fs.writeFileSync(DB_FILE, JSON.stringify(merged, null, 2), "utf-8");
   } catch (err) {
     console.warn("Could not write file to disk (retained in-memory):", err);
+  }
+  return merged;
+}
+
+/**
+ * Fetches latest state from Supabase (if configured) and merges it into the
+ * local persistent store so cold serverless instances never start stale.
+ */
+export async function getSyncedServerDb(): Promise<AppDatabaseState> {
+  if (isSupabaseConfigured()) {
+    const supabaseState = await fetchSupabaseState();
+    if (supabaseState && Array.isArray(supabaseState.applications)) {
+      return savePersistentDb(supabaseState);
+    }
+  }
+  return getPersistentDb();
+}
+
+/**
+ * Pulls latest cloud state, merges incoming state without overwriting concurrent
+ * records, persists locally, and pushes the merged state back to Supabase.
+ */
+export async function saveSyncedServerDb(
+  incomingState: AppDatabaseState
+): Promise<AppDatabaseState> {
+  if (isSupabaseConfigured()) {
+    const supabaseState = await fetchSupabaseState();
+    if (supabaseState && Array.isArray(supabaseState.applications)) {
+      savePersistentDb(supabaseState);
+    }
+  }
+  const merged = savePersistentDb(incomingState);
+  if (isSupabaseConfigured()) {
+    await saveSupabaseState(merged);
   }
   return merged;
 }
