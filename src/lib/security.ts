@@ -139,3 +139,23 @@ export function verifySessionToken(token?: string | null): SessionTokenPayload |
     return null;
   }
 }
+
+export function getSessionFromRequest(req: Request): SessionTokenPayload | null {
+  const cookieHeader = req.headers.get("cookie") || "";
+  if (!cookieHeader) return null;
+  const cookies = cookieHeader.split(";").map((part) => part.trim());
+  for (const part of cookies) {
+    const eqIndex = part.indexOf("=");
+    if (eqIndex <= 0) continue;
+    const name = part.slice(0, eqIndex).trim();
+    if (name === SESSION_COOKIE_NAME) {
+      const rawVal = part.slice(eqIndex + 1).trim();
+      try {
+        return verifySessionToken(decodeURIComponent(rawVal));
+      } catch {
+        return verifySessionToken(rawVal);
+      }
+    }
+  }
+  return null;
+}

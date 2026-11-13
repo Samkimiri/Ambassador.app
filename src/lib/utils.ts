@@ -262,3 +262,44 @@ export function generateCredentialId(seed?: string): string {
   return `SCDS-AMB-2026-${numPart}`;
 }
 
+const SUSPICIOUS_TLDS = new Set([
+  "con",
+  "cmo",
+  "ocm",
+  "comm",
+  "coom",
+  "cim",
+  "xom",
+  "vom",
+  "orgg",
+  "neto",
+]);
+
+/**
+ * Checks whether an email address looks deliverable (valid syntax + valid TLD).
+ */
+export function validateEmailForDelivery(email?: string): {
+  valid: boolean;
+  reason?: string;
+} {
+  const trimmed = (email || "").trim();
+  if (!trimmed) {
+    return { valid: false, reason: "Email address is missing." };
+  }
+  const match = /^[^\s@]+@[^\s@]+\.([a-zA-Z]{2,24})$/.exec(trimmed);
+  if (!match) {
+    return {
+      valid: false,
+      reason: "Email does not have a valid domain and TLD (e.g. .com, .ac.ke).",
+    };
+  }
+  const tld = match[1].toLowerCase();
+  if (SUSPICIOUS_TLDS.has(tld)) {
+    return {
+      valid: false,
+      reason: `Suspicious TLD ".${tld}" (did you mean ".com"?).`,
+    };
+  }
+  return { valid: true };
+}
+

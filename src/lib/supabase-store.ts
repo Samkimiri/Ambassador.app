@@ -79,25 +79,44 @@ export async function upsertSupabaseApplication(
   const client = getServerClient();
   if (!client) return false;
 
+  const baseRow = {
+    id: app.id,
+    user_id: app.userId,
+    full_name: app.fullName,
+    email: app.email.toLowerCase().trim(),
+    phone: app.phone,
+    county: app.county || null,
+    institution: app.institution || null,
+    occupation: app.occupation || null,
+    status: app.status,
+    payload: app,
+    created_at: app.createdAt || new Date().toISOString(),
+    reviewed_at: app.reviewedAt || null,
+    updated_at: new Date().toISOString(),
+  };
+
   try {
-    const { error } = await client.from("applications").upsert(
+    let { error } = await client.from("applications").upsert(
       {
-        id: app.id,
-        user_id: app.userId,
-        full_name: app.fullName,
-        email: app.email.toLowerCase().trim(),
-        phone: app.phone,
-        county: app.county || null,
-        institution: app.institution || null,
-        occupation: app.occupation || null,
-        status: app.status,
-        payload: app,
-        created_at: app.createdAt || new Date().toISOString(),
-        reviewed_at: app.reviewedAt || null,
-        updated_at: new Date().toISOString(),
+        ...baseRow,
+        approval_email_sent_at: app.approvalEmailSentAt || null,
+        approval_email_last_error: app.approvalEmailLastError ?? null,
       },
       { onConflict: "id" }
     );
+
+    if (
+      error &&
+      (error.message?.includes("approval_email_") || error.code === "PGRST204")
+    ) {
+      console.warn(
+        "[Supabase] approval_email_sent_at/approval_email_last_error columns missing on public.applications; run migration 20261113000002_application_email_tracking.sql. Retrying without tracking columns."
+      );
+      const retry = await client
+        .from("applications")
+        .upsert(baseRow, { onConflict: "id" });
+      error = retry.error;
+    }
 
     if (error) {
       console.error("[Supabase] Could not upsert to public.applications:", {
@@ -114,6 +133,56 @@ export async function upsertSupabaseApplication(
   } catch (err) {
     console.error("[Supabase] Failed to upsert to public.applications:", err);
     return false;
+  }
+}
+
+export async function fetchSupabaseApplicationById(
+  id: string
+): Promise<AmbassadorApplication | null> {
+  const client = getServerClient();
+  if (!client) return null;
+
+  try {
+    const { data, error } = await client
+      .from("applications")
+      .select("payload, approval_email_sent_at, approval_email_last_error")
+      .eq("id", id)
+      .single();
+
+    if (error) {
+      if (
+        error.message?.includes("approval_email_") ||
+        error.code === "PGRST204"
+      ) {
+        const fallback = await client
+          .from("applications")
+          .select("payload")
+          .eq("id", id)
+          .single();
+        if (fallback.error || !fallback.data?.payload) return null;
+        return fallback.data.payload as AmbassadorApplication;
+      }
+      return null;
+    }
+
+    const row = data as {
+      payload?: AmbassadorApplication;
+      approval_email_sent_at?: string | null;
+      approval_email_last_error?: string | null;
+    } | null;
+    if (!row?.payload) return null;
+
+    return {
+      ...row.payload,
+      approvalEmailSentAt:
+        row.approval_email_sent_at ?? row.payload.approvalEmailSentAt,
+      approvalEmailLastError:
+        row.approval_email_last_error !== undefined
+          ? row.approval_email_last_error
+          : row.payload.approvalEmailLastError,
+    };
+  } catch {
+    return null;
   }
 }
 

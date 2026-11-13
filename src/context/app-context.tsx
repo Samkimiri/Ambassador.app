@@ -833,9 +833,43 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
             referralCode,
             dashboardUrl: `${window.location.origin}/dashboard`,
           }),
-        }).catch((err) => {
-          console.warn("Approval email dispatch failed:", err);
-        });
+        })
+          .then(async (res) => {
+            const now = new Date().toISOString();
+            if (res.ok) {
+              const updatedApps = nextState.applications.map((a) =>
+                a.id === applicationId
+                  ? { ...a, approvalEmailSentAt: now, approvalEmailLastError: null }
+                  : a
+              );
+              await broadcastDbChange({ ...nextState, applications: updatedApps });
+            } else {
+              const errJson = (await res.json().catch(() => ({}))) as { error?: string };
+              const updatedApps = nextState.applications.map((a) =>
+                a.id === applicationId
+                  ? {
+                      ...a,
+                      approvalEmailLastError:
+                        errJson.error || `HTTP ${res.status} sending approval email`,
+                    }
+                  : a
+              );
+              await broadcastDbChange({ ...nextState, applications: updatedApps });
+            }
+          })
+          .catch(async (err) => {
+            console.warn("Approval email dispatch failed:", err);
+            const updatedApps = nextState.applications.map((a) =>
+              a.id === applicationId
+                ? {
+                    ...a,
+                    approvalEmailLastError:
+                      err instanceof Error ? err.message : "Network error sending email",
+                  }
+                : a
+            );
+            await broadcastDbChange({ ...nextState, applications: updatedApps });
+          });
       }
     }
   };

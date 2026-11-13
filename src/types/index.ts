@@ -85,6 +85,8 @@ export interface AmbassadorApplication {
   reviewedBy?: string;
   reviewNotes?: string;
   reviewedAt?: string;
+  approvalEmailSentAt?: string;
+  approvalEmailLastError?: string | null;
   createdAt: string;
 }
 

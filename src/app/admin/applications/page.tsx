@@ -18,8 +18,10 @@ import {
   Mail,
   MapPin,
   MessageSquare,
+  Pencil,
   Phone,
   RotateCw,
+  Send,
   ShieldCheck,
   Sparkles,
   Target,
@@ -28,7 +30,12 @@ import {
   XCircle,
 } from "lucide-react";
 import { useApp } from "@/context/app-context";
-import { formatDate, getSocialLinkUrl } from "@/lib/utils";
+import {
+  formatDate,
+  formatDateTime,
+  getSocialLinkUrl,
+  validateEmailForDelivery,
+} from "@/lib/utils";
 import { AmbassadorApplication } from "@/types";
 
 function computeReadiness(app: AmbassadorApplication) {
@@ -110,9 +117,32 @@ export default function AdminApplicationsPage() {
   } = useApp();
   const [filter, setFilter] = useState("ALL");
   const [notesMap, setNotesMap] = useState<Record<string, string>>({});
-  const [feedback, setFeedback] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [sendingEmailId, setSendingEmailId] = useState<string | null>(null);
+  const [cooldownUntilMap, setCooldownUntilMap] = useState<Record<string, number>>({});
+  const [nowTs, setNowTs] = useState(() => Date.now());
+  const [editingEmailId, setEditingEmailId] = useState<string | null>(null);
+  const [editedEmailMap, setEditedEmailMap] = useState<Record<string, string>>({});
+  const [bulkProgress, setBulkProgress] = useState<{
+    current: number;
+    total: number;
+  } | null>(null);
+
+  useEffect(() => {
+    const hasActiveCooldown = Object.values(cooldownUntilMap).some(
+      (until) => until > Date.now()
+    );
+    if (!hasActiveCooldown) return;
+    const timer = setInterval(() => {
+      setNowTs(Date.now());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [cooldownUntilMap]);
 
   useEffect(() => {
     refreshLiveState();
@@ -152,14 +182,151 @@ export default function AdminApplicationsPage() {
     name: string
   ) => {
     await reviewApplication(id, decision, notesMap[id]);
-    setFeedback(
-      `Application for ${name} marked as ${decision.toUpperCase()}. ${
+    setFeedback({
+      type: "success",
+      text: `Application for ${name} marked as ${decision.toUpperCase()}. ${
         decision === "approved"
           ? "Unique referral code generated and ambassador dashboard unlocked permanently."
           : ""
-      }`
-    );
+      }`,
+    });
     setTimeout(() => setFeedback(null), 5000);
+  };
+
+  const approvedWithoutEmail = sortedApplications.filter(
+    (a) => a.status === "approved" && !a.approvalEmailSentAt
+  );
+
+  const handleResendApprovalEmail = async (app: AmbassadorApplication) => {
+    const candidateEmail = (editedEmailMap[app.id] ?? app.email).trim();
+    const check = validateEmailForDelivery(candidateEmail);
+    if (!check.valid) {
+      setEditingEmailId(app.id);
+      setEditedEmailMap((prev) => ({ ...prev, [app.id]: candidateEmail }));
+      setFeedback({
+        type: "error",
+        text: `Cannot send to "${candidateEmail}": ${check.reason} Please edit the email address first.`,
+      });
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Send approval email to ${app.fullName} at ${candidateEmail}?`
+    );
+    if (!confirmed) return;
+
+    const cooldownUntil = Date.now() + 30_000;
+    setNowTs(Date.now());
+    setCooldownUntilMap((prev) => ({ ...prev, [app.id]: cooldownUntil }));
+    setSendingEmailId(app.id);
+
+    try {
+      const res = await fetch(`/api/applications/${app.id}/resend-approval`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(
+          candidateEmail.toLowerCase() !== app.email.trim().toLowerCase()
+            ? { updatedEmail: candidateEmail }
+            : {}
+        ),
+      });
+      const data = (await res.json().catch(() => ({}))) as {
+        ok?: boolean;
+        email?: string;
+        error?: string;
+      };
+
+      if (!res.ok) {
+        setFeedback({
+          type: "error",
+          text: data.error || `Failed to send approval email (HTTP ${res.status}).`,
+        });
+      } else {
+        setEditingEmailId((curr) => (curr === app.id ? null : curr));
+        setFeedback({
+          type: "success",
+          text: `Email sent to ${data.email || candidateEmail}`,
+        });
+      }
+      await refreshLiveState();
+    } catch (err) {
+      setFeedback({
+        type: "error",
+        text:
+          err instanceof Error ? err.message : "Network error sending approval email.",
+      });
+    } finally {
+      setSendingEmailId(null);
+    }
+  };
+
+  const handleBulkResendApproval = async () => {
+    if (approvedWithoutEmail.length === 0 || bulkProgress) return;
+    const confirmed = window.confirm(
+      `Send approval email to ${approvedWithoutEmail.length} approved ambassador(s) who have not received one yet?`
+    );
+    if (!confirmed) return;
+
+    let sentCount = 0;
+    const failures: string[] = [];
+    setBulkProgress({ current: 0, total: approvedWithoutEmail.length });
+
+    for (let i = 0; i < approvedWithoutEmail.length; i++) {
+      const app = approvedWithoutEmail[i];
+      setBulkProgress({ current: i + 1, total: approvedWithoutEmail.length });
+
+      const targetEmail = (editedEmailMap[app.id] ?? app.email).trim();
+      const check = validateEmailForDelivery(targetEmail);
+      if (!check.valid) {
+        failures.push(`${app.fullName} (${targetEmail}): ${check.reason}`);
+        continue;
+      }
+
+      try {
+        const res = await fetch(`/api/applications/${app.id}/resend-approval`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(
+            targetEmail.toLowerCase() !== app.email.trim().toLowerCase()
+              ? { updatedEmail: targetEmail }
+              : {}
+          ),
+        });
+        const data = (await res.json().catch(() => ({}))) as {
+          error?: string;
+        };
+        if (res.ok) {
+          sentCount += 1;
+        } else {
+          failures.push(`${app.fullName} (${targetEmail}): ${data.error || `HTTP ${res.status}`}`);
+        }
+      } catch (err) {
+        failures.push(
+          `${app.fullName} (${targetEmail}): ${
+            err instanceof Error ? err.message : "Network error"
+          }`
+        );
+      }
+
+      if (i < approvedWithoutEmail.length - 1) {
+        await new Promise((resolve) => setTimeout(resolve, 400));
+      }
+    }
+
+    setBulkProgress(null);
+    await refreshLiveState();
+
+    if (failures.length === 0) {
+      setFeedback({
+        type: "success",
+        text: `Bulk send complete: ${sentCount} approval email(s) sent successfully.`,
+      });
+    } else {
+      setFeedback({
+        type: "error",
+        text: `Bulk send finished: ${sentCount} sent, ${failures.length} failed (${failures.join("; ")}).`,
+      });
+    }
   };
 
   const handleDelete = async (id: string, name: string) => {
@@ -180,14 +347,18 @@ export default function AdminApplicationsPage() {
         `${app?.institution || "SCDS Applicant"} · ${app?.county || "Kenya"}`
       );
       setDeleteConfirmId(null);
-      setFeedback(`Application for ${name} moved to Trash (retained for 48 hours with restore/purge options).`);
+      setFeedback({
+        type: "success",
+        text: `Application for ${name} moved to Trash (retained for 48 hours with restore/purge options).`,
+      });
       setTimeout(() => setFeedback(null), 5000);
     } catch (err) {
-      setFeedback(
-        `Failed to move application to Trash: ${
+      setFeedback({
+        type: "error",
+        text: `Failed to move application to Trash: ${
           err instanceof Error ? err.message : "Error"
-        }`
-      );
+        }`,
+      });
     }
   };
 
@@ -239,7 +410,20 @@ export default function AdminApplicationsPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={handleBulkResendApproval}
+            disabled={approvedWithoutEmail.length === 0 || Boolean(bulkProgress)}
+            className="inline-flex items-center gap-1.5 rounded-xl border border-brand-200 bg-brand-50 px-3.5 py-2 text-xs font-semibold text-brand-700 hover:bg-brand-100 disabled:opacity-50 transition"
+            title="Send approval email to every approved ambassador who has not received one yet"
+          >
+            <Send className="h-3.5 w-3.5" />
+            {bulkProgress
+              ? `Sending ${bulkProgress.current} of ${bulkProgress.total}...`
+              : `Resend to all approved without a sent email (${approvedWithoutEmail.length})`}
+          </button>
+
           <button
             type="button"
             onClick={handleManualRefresh}
@@ -278,9 +462,19 @@ export default function AdminApplicationsPage() {
       </div>
 
       {feedback && (
-        <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-xs font-semibold text-emerald-800 animate-fade-in flex items-center gap-2">
-          <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
-          <span>{feedback}</span>
+        <div
+          className={`rounded-xl border p-4 text-xs font-semibold animate-fade-in flex items-center gap-2 ${
+            feedback.type === "error"
+              ? "border-rose-200 bg-rose-50 text-rose-800"
+              : "border-emerald-200 bg-emerald-50 text-emerald-800"
+          }`}
+        >
+          {feedback.type === "error" ? (
+            <AlertTriangle className="h-4 w-4 text-rose-600 shrink-0" />
+          ) : (
+            <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+          )}
+          <span>{feedback.text}</span>
         </div>
       )}
 
@@ -718,12 +912,111 @@ export default function AdminApplicationsPage() {
                       </button>
                     )}
 
-                    {/* Approved & Active indicator */}
+                    {/* Approved & Active indicator + Email Delivery Status */}
                     {isApproved && (
-                      <span className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-50 border border-emerald-300 px-3 py-1.5 text-xs font-bold text-emerald-800">
-                        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
-                        Approved &amp; Active
-                      </span>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-50 border border-emerald-300 px-3 py-1.5 text-xs font-bold text-emerald-800">
+                          <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+                          Approved &amp; Active
+                        </span>
+                        <span
+                          className={`inline-flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-semibold ${
+                            app.approvalEmailSentAt
+                              ? "bg-blue-50 border-blue-200 text-blue-800"
+                              : "bg-amber-50 border-amber-200 text-amber-800"
+                          }`}
+                        >
+                          <Mail className="h-3.5 w-3.5" />
+                          {app.approvalEmailSentAt
+                            ? `Email sent ${formatDateTime(app.approvalEmailSentAt)}`
+                            : "Not sent yet"}
+                        </span>
+                        {(() => {
+                          const currentEmail = (editedEmailMap[app.id] ?? app.email).trim();
+                          const emailCheck = validateEmailForDelivery(currentEmail);
+                          const cooldownUntil = cooldownUntilMap[app.id] || 0;
+                          const cooldownSecs = Math.max(
+                            0,
+                            Math.ceil((cooldownUntil - nowTs) / 1000)
+                          );
+                          const isSendingThis = sendingEmailId === app.id;
+                          return (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => handleResendApprovalEmail(app)}
+                                disabled={isSendingThis || cooldownSecs > 0 || Boolean(bulkProgress)}
+                                className="inline-flex items-center gap-1.5 rounded-xl bg-brand-600 px-3.5 py-2 text-xs font-semibold text-white hover:bg-brand-700 disabled:opacity-50 transition shadow-xs"
+                                title={`Send approval email to ${currentEmail}`}
+                              >
+                                <Send className="h-3.5 w-3.5" />
+                                {isSendingThis
+                                  ? "Sending..."
+                                  : cooldownSecs > 0
+                                  ? `Wait ${cooldownSecs}s`
+                                  : "Resend approval email"}
+                              </button>
+                              {(!emailCheck.valid || editingEmailId === app.id) && (
+                                <div className="w-full mt-2 rounded-xl border border-amber-300 bg-amber-50 p-3 space-y-2">
+                                  {!emailCheck.valid && (
+                                    <div className="flex items-center gap-1.5 text-xs font-semibold text-amber-900">
+                                      <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0" />
+                                      <span>
+                                        Invalid email warning ({app.email}): {emailCheck.reason}
+                                      </span>
+                                    </div>
+                                  )}
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <input
+                                      type="email"
+                                      value={editedEmailMap[app.id] ?? app.email}
+                                      onChange={(e) =>
+                                        setEditedEmailMap((prev) => ({
+                                          ...prev,
+                                          [app.id]: e.target.value,
+                                        }))
+                                      }
+                                      placeholder="Enter valid email (e.g. name@gmail.com)"
+                                      className="flex-1 min-w-[220px] rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-xs text-slate-900 focus:border-brand-600 focus:outline-none"
+                                    />
+                                    <button
+                                      type="button"
+                                      onClick={() => handleResendApprovalEmail(app)}
+                                      disabled={isSendingThis || cooldownSecs > 0}
+                                      className="inline-flex items-center gap-1 rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-700 disabled:opacity-50 transition"
+                                    >
+                                      <Send className="h-3 w-3" />
+                                      Save &amp; Send
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
+                              {emailCheck.valid && editingEmailId !== app.id && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setEditingEmailId(app.id);
+                                    setEditedEmailMap((prev) => ({
+                                      ...prev,
+                                      [app.id]: prev[app.id] ?? app.email,
+                                    }));
+                                  }}
+                                  className="inline-flex items-center gap-1 rounded-xl border border-slate-300 bg-white px-2.5 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition"
+                                  title="Edit email before sending"
+                                >
+                                  <Pencil className="h-3 w-3" />
+                                  Edit Email
+                                </button>
+                              )}
+                              {app.approvalEmailLastError && !app.approvalEmailSentAt && (
+                                <div className="w-full text-[11px] font-medium text-rose-600">
+                                  Last send error: {app.approvalEmailLastError}
+                                </div>
+                              )}
+                            </>
+                          );
+                        })()}
+                      </div>
                     )}
 
                     {/* Reject Button (Only if not rejected and not approved) */}
