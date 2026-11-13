@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { CheckCircle2, Sparkles } from "lucide-react";
 import { PublicFooter, PublicNavbar } from "@/components/layout/site-header";
+import { PasswordInput } from "@/components/ui/password-input";
 import { useApp } from "@/context/app-context";
 import { ambassadorApplicationSchema } from "@/lib/validations";
 
@@ -179,8 +180,7 @@ export default function RegisterApplicationPage() {
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
                   Account Password *
                 </label>
-                <input
-                  type="password"
+                <PasswordInput
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}

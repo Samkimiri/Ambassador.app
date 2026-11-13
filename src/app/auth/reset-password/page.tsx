@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { ArrowLeft, CheckCircle2, KeyRound, Loader2 } from "lucide-react";
 import { PublicFooter, PublicNavbar } from "@/components/layout/site-header";
+import { PasswordInput } from "@/components/ui/password-input";
 import { useApp } from "@/context/app-context";
 
 function ResetPasswordForm() {
@@ -102,8 +103,7 @@ function ResetPasswordForm() {
               <label className="block text-xs font-semibold text-slate-700 mb-1">
                 New Password
               </label>
-              <input
-                type="password"
+              <PasswordInput
                 required
                 minLength={6}
                 value={newPassword}
@@ -116,8 +116,7 @@ function ResetPasswordForm() {
               <label className="block text-xs font-semibold text-slate-700 mb-1">
                 Confirm New Password
               </label>
-              <input
-                type="password"
+              <PasswordInput
                 required
                 minLength={6}
                 value={confirmPassword}

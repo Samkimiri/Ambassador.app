@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Lock } from "lucide-react";
 import { PublicFooter, PublicNavbar } from "@/components/layout/site-header";
+import { PasswordInput } from "@/components/ui/password-input";
 import { useApp } from "@/context/app-context";
 import { loginSchema } from "@/lib/validations";
 
@@ -122,8 +123,7 @@ export default function LoginPage() {
                   Forgot password?
                 </Link>
               </div>
-              <input
-                type="password"
+              <PasswordInput
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
