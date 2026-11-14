@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import fs from "fs";
 import path from "path";
+import { createRequire } from "module";
 
 const ALL_ROUTES = [
   "/",
@@ -69,7 +70,7 @@ describe("Mobile responsiveness & overflow regression", () => {
     const pwPath =
       process.env.PLAYWRIGHT_PATH ||
       path.resolve(process.cwd(), "../mobile-audit/node_modules/playwright");
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const require = createRequire(import.meta.url);
     const { chromium } = require(pwPath);
 
     const browser = await chromium.launch({ headless: true });
