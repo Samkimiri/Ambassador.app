@@ -18,13 +18,17 @@
   html {
     color: var(--color-text);
     background-color: var(--color-surface);
-    overflow-x: hidden;
+    overflow-x: clip;
+    max-width: 100%;
   }
 
   body {
     color: var(--color-text);
     background-color: var(--color-surface);
-    overflow-x: hidden;
+    overflow-x: clip;
+    max-width: 100%;
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
     @apply antialiased selection:bg-[#0048E8] selection:text-white;
   }
 

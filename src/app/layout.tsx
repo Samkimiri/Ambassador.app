@@ -56,6 +56,7 @@ export const viewport: Viewport = {
   themeColor: "#0048E8",
   width: "device-width",
   initialScale: 1,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({
@@ -68,7 +69,7 @@ export default function RootLayout({
       <body className="min-h-screen flex flex-col bg-surface text-charcoal">
         <AppProvider>
           <PwaManager />
-          <div className="flex-1 flex flex-col">{children}</div>
+          <div className="flex-1 flex flex-col min-w-0 overflow-x-clip">{children}</div>
         </AppProvider>
       </body>
     </html>
