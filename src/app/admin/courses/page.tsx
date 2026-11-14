@@ -294,6 +294,7 @@ export default function AdminCoursesPage() {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       </div>
     </div>

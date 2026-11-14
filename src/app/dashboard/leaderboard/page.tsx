@@ -105,6 +105,7 @@ export default function DashboardLeaderboardPage() {
             })}
           </tbody>
         </table>
+        </div>
       </div>
       {ranked.length > visibleLimit && (
         <div className="flex justify-center">
