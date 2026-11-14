@@ -367,8 +367,11 @@ export default function AdminMigrationPage() {
             </span>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs border-collapse">
+          <div className="sm:hidden px-3 py-1.5 text-[11px] font-medium text-slate-500 bg-slate-50 border border-slate-100 rounded-t-xl">
+            Swipe horizontally to view full table →
+          </div>
+          <div className="overflow-x-auto max-w-full">
+            <table className="w-full min-w-[580px] text-left text-xs border-collapse">
               <thead>
                 <tr className="border-b border-slate-200 text-slate-500">
                   <th className="py-2 pr-3">Collection</th>

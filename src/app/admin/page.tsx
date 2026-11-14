@@ -241,8 +241,11 @@ export default function AdminOverviewPage() {
           </Link>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse text-xs">
+        <div className="sm:hidden px-3 py-1.5 text-[11px] font-medium text-slate-500 bg-slate-50 border border-slate-100 rounded-t-xl">
+          Swipe horizontally to view full table →
+        </div>
+        <div className="overflow-x-auto max-w-full">
+          <table className="w-full min-w-[540px] text-left border-collapse text-xs">
             <thead>
               <tr className="border-b border-slate-200 text-[11px] font-semibold uppercase text-slate-500">
                 <th className="py-3 px-3">Learner</th>

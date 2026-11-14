@@ -416,8 +416,12 @@ Proud to represent SCDS as an Official Ambassador. Feel free to connect or messa
               </div>
             </div>
 
-            <div className="overflow-x-auto rounded-xl border border-slate-200">
-              <table className="w-full text-left text-xs">
+            <div className="rounded-xl border border-slate-200 overflow-hidden">
+              <div className="sm:hidden px-3.5 py-1.5 text-[11px] font-medium text-slate-500 bg-slate-50 border-b border-slate-100">
+                Swipe horizontally to view full table →
+              </div>
+              <div className="overflow-x-auto max-w-full">
+                <table className="w-full min-w-[560px] text-left text-xs">
                 <thead className="bg-slate-50 border-b border-slate-200 text-slate-700 font-bold">
                   <tr>
                     <th className="p-3.5">Course Name</th>
@@ -460,6 +464,7 @@ Proud to represent SCDS as an Official Ambassador. Feel free to connect or messa
                   })}
                 </tbody>
               </table>
+            </div>
             </div>
 
             <div className="rounded-xl border border-brand-200 bg-brand-50 p-4 text-xs text-brand-900 flex items-start gap-3">

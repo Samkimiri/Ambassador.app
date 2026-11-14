@@ -47,8 +47,12 @@ export default function DashboardLeaderboardPage() {
         </select>
       </div>
 
-      <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-x-auto">
-        <table className="w-full min-w-[520px] text-left border-collapse text-xs">
+      <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+        <div className="sm:hidden px-4 py-1.5 text-[11px] font-medium text-slate-500 bg-slate-50 border-b border-slate-100">
+          Swipe horizontally to view full table →
+        </div>
+        <div className="overflow-x-auto max-w-full">
+          <table className="w-full min-w-[520px] text-left border-collapse text-xs">
           <thead>
             <tr className="border-b border-slate-200 bg-slate-50 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
               <th className="py-3.5 px-4">Rank</th>

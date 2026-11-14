@@ -254,7 +254,7 @@ export default function AmbassadorDashboardPage() {
         </div>
 
         {/* Social Share Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-2.5">
+        <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-2.5">
           <a
             href={whatsappUrl}
             target="_blank"
@@ -561,8 +561,12 @@ export default function AmbassadorDashboardPage() {
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[540px] text-left border-collapse">
+          <div className="space-y-1">
+            <div className="sm:hidden px-3 py-1.5 text-[11px] font-medium text-slate-500 bg-slate-50 border border-slate-100 rounded-t-xl">
+              Swipe horizontally to view full table →
+            </div>
+            <div className="overflow-x-auto max-w-full">
+              <table className="w-full min-w-[540px] text-left border-collapse">
               <thead>
                 <tr className="border-b border-slate-200 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
                   <th className="py-3 px-3">Learner</th>
@@ -595,8 +599,9 @@ export default function AmbassadorDashboardPage() {
                     </td>
                   </tr>
                 ))}
-              </tbody>
+            </tbody>
             </table>
+          </div>
           </div>
         )}
       </div>

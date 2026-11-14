@@ -441,8 +441,11 @@ export default function AdminAmbassadorsDirectoryPage() {
       )}
 
       <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse text-xs">
+        <div className="sm:hidden px-4 py-1.5 text-[11px] font-medium text-slate-500 bg-slate-50 border-b border-slate-100">
+          Swipe horizontally to view full table →
+        </div>
+        <div className="overflow-x-auto max-w-full">
+          <table className="w-full min-w-[640px] text-left border-collapse text-xs">
             <thead>
               <tr className="border-b border-slate-200 bg-slate-50 text-[11px] font-semibold uppercase text-slate-500">
                 <th className="py-3.5 px-4">Ambassador Profile</th>
@@ -652,7 +655,7 @@ export default function AdminAmbassadorsDirectoryPage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs text-slate-300 pt-1">
+                <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs text-slate-300 pt-1">
                   <div>
                     <div className="text-slate-500 text-[11px]">Referral Code</div>
                     <div className="font-mono font-bold text-white text-sm">
