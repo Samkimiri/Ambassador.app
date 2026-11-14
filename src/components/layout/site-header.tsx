@@ -19,6 +19,10 @@ export function PublicNavbar() {
   const { currentUser, signOut } = useApp();
   const [mobileOpen, setMobileOpen] = React.useState(false);
 
+  React.useEffect(() => {
+    setMobileOpen(false);
+  }, [pathname]);
+
   const navLinks = [
     { href: "/", label: "Overview" },
     { href: "/courses", label: "Courses" },
@@ -121,8 +125,9 @@ export function PublicNavbar() {
         <button
           type="button"
           onClick={() => setMobileOpen(!mobileOpen)}
-          className="md:hidden rounded-lg p-2 text-navy-900 hover:bg-brand-50"
+          className="md:hidden inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg p-2 text-navy-900 hover:bg-brand-50"
           aria-label="Toggle Menu"
+          aria-expanded={mobileOpen}
         >
           {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
         </button>
@@ -142,7 +147,7 @@ export function PublicNavbar() {
                   href={item.href}
                   onClick={() => setMobileOpen(false)}
                   className={cn(
-                    "rounded-xl px-3.5 py-2.5 text-sm font-semibold",
+                    "flex min-h-[44px] items-center rounded-xl px-3.5 py-2.5 text-sm font-semibold",
                     active
                       ? "bg-brand-600 text-white"
                       : "text-charcoal hover:bg-brand-50"
@@ -159,7 +164,7 @@ export function PublicNavbar() {
                 <Link
                   href={currentUser.role === "super_admin" ? "/admin" : "/dashboard"}
                   onClick={() => setMobileOpen(false)}
-                  className="w-full rounded-xl bg-brand-600 px-4 py-2.5 text-center text-sm font-bold text-white"
+                  className="flex min-h-[44px] w-full items-center justify-center rounded-xl bg-brand-600 px-4 py-2.5 text-center text-sm font-bold text-white"
                 >
                   Open {currentUser.role === "super_admin" ? "Admin Console" : "Dashboard"}
                 </Link>
@@ -169,7 +174,7 @@ export function PublicNavbar() {
                     signOut();
                     setMobileOpen(false);
                   }}
-                  className="w-full rounded-xl border border-gray-200 px-4 py-2 text-sm font-semibold text-charcoal"
+                  className="flex min-h-[44px] w-full items-center justify-center rounded-xl border border-gray-200 px-4 py-2 text-sm font-semibold text-charcoal"
                 >
                   Sign Out
                 </button>
@@ -179,14 +184,14 @@ export function PublicNavbar() {
                 <Link
                   href="/auth/login"
                   onClick={() => setMobileOpen(false)}
-                  className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-center text-sm font-semibold text-navy-900"
+                  className="flex min-h-[44px] w-full items-center justify-center rounded-xl border border-gray-200 px-4 py-2.5 text-center text-sm font-semibold text-navy-900"
                 >
                   Sign In
                 </Link>
                 <Link
                   href="/auth/register"
                   onClick={() => setMobileOpen(false)}
-                  className="w-full rounded-xl bg-gold-400 px-4 py-2.5 text-center text-sm font-bold text-navy-900"
+                  className="flex min-h-[44px] w-full items-center justify-center rounded-xl bg-gold-400 px-4 py-2.5 text-center text-sm font-bold text-navy-900"
                 >
                   Apply as Ambassador
                 </Link>

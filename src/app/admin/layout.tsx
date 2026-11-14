@@ -13,12 +13,14 @@ import {
   FolderKanban,
   LayoutDashboard,
   Megaphone,
+  Menu,
   Settings,
   ShieldAlert,
   ShieldCheck,
   Trash2,
   Users,
   Wallet,
+  X,
 } from "lucide-react";
 import { useApp } from "@/context/app-context";
 import { cn } from "@/lib/utils";
@@ -48,6 +50,11 @@ export default function AdminLayout({
 }) {
   const pathname = usePathname();
   const { currentUser, db } = useApp();
+  const [mobileNavOpen, setMobileNavOpen] = React.useState(false);
+
+  React.useEffect(() => {
+    setMobileNavOpen(false);
+  }, [pathname]);
 
   if (!currentUser || currentUser.role !== "super_admin") {
     return (
@@ -93,7 +100,7 @@ export default function AdminLayout({
   return (
     <div className="min-h-screen flex flex-col lg:flex-row bg-slate-50">
       <aside className="w-full lg:w-64 shrink-0 border-b lg:border-b-0 lg:border-r border-slate-200 bg-slate-950 text-slate-300 flex flex-col justify-between">
-        <div className="p-4 space-y-4">
+        <div className="p-3 sm:p-4 lg:space-y-4">
           <div className="flex items-center justify-between gap-2">
             <Link href="/admin" className="flex items-center gap-2.5 min-w-0">
               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand-600 text-gold-400 font-extrabold text-sm">
@@ -108,15 +115,26 @@ export default function AdminLayout({
                 </div>
               </div>
             </Link>
-            <Link
-              href="/"
-              className="lg:hidden shrink-0 rounded-lg border border-slate-700 px-2.5 py-1.5 text-xs font-medium text-slate-300 hover:bg-slate-900 hover:text-white"
-            >
-              Site
-            </Link>
+            <div className="flex lg:hidden items-center gap-1.5 shrink-0">
+              <Link
+                href="/"
+                className="inline-flex min-h-[44px] items-center rounded-lg border border-slate-700 px-3 text-xs font-medium text-slate-300 hover:bg-slate-900 hover:text-white"
+              >
+                Site
+              </Link>
+              <button
+                type="button"
+                onClick={() => setMobileNavOpen(true)}
+                className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg border border-slate-700 text-white hover:bg-slate-900"
+                aria-label="Open Admin Menu"
+                aria-expanded={mobileNavOpen}
+              >
+                <Menu className="h-5 w-5" />
+              </button>
+            </div>
           </div>
 
-          <nav className="flex lg:flex-col gap-1 overflow-x-auto pb-1 lg:pb-0">
+          <nav className="hidden lg:flex lg:flex-col gap-1">
             {ADMIN_NAV.map((item) => {
               const Icon = item.icon;
               const isActive =
@@ -168,6 +186,92 @@ export default function AdminLayout({
           </Link>
         </div>
       </aside>
+
+      {mobileNavOpen && (
+        <div className="fixed inset-0 z-50 lg:hidden flex">
+          <button
+            type="button"
+            aria-label="Close Admin Menu"
+            onClick={() => setMobileNavOpen(false)}
+            className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs"
+          />
+          <div className="relative z-10 w-72 max-w-[85vw] h-full bg-slate-950 text-slate-300 shadow-2xl flex flex-col justify-between overflow-y-auto">
+            <div className="p-4 space-y-4">
+              <div className="flex items-center justify-between gap-2">
+                <div className="min-w-0">
+                  <div className="text-sm font-bold text-white truncate">
+                    SCDS Admin Console
+                  </div>
+                  <div className="text-[11px] text-slate-400 truncate">
+                    {currentUser.fullName}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setMobileNavOpen(false)}
+                  aria-label="Close Admin Menu"
+                  className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl text-slate-300 hover:bg-white/10 hover:text-white"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              <nav className="flex flex-col gap-1">
+                {ADMIN_NAV.map((item) => {
+                  const Icon = item.icon;
+                  const isActive =
+                    item.href === "/admin"
+                      ? pathname === "/admin"
+                      : pathname.startsWith(item.href);
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={() => setMobileNavOpen(false)}
+                      className={cn(
+                        "flex min-h-[44px] items-center justify-between gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition",
+                        isActive
+                          ? "bg-brand-600 text-white shadow-sm"
+                          : "text-slate-300 hover:bg-white/10 hover:text-white"
+                      )}
+                    >
+                      <span className="flex items-center gap-2.5">
+                        <Icon className={cn("h-4 w-4", isActive ? "text-gold-400" : "text-slate-400")} />
+                        {item.label}
+                      </span>
+                      {item.href === "/admin/applications" && pendingApps > 0 && (
+                        <span className="rounded-full bg-gold-400 px-1.5 py-0.5 text-[10px] font-bold text-navy-900">
+                          {pendingApps}
+                        </span>
+                      )}
+                      {item.href === "/admin/payouts" && pendingPayouts > 0 && (
+                        <span className="rounded-full bg-gold-400 px-1.5 py-0.5 text-[10px] font-bold text-navy-900">
+                          {pendingPayouts}
+                        </span>
+                      )}
+                      {item.href === "/admin/trash" && (db.trash?.length || 0) > 0 && (
+                        <span className="rounded-full bg-rose-500 px-1.5 py-0.5 text-[10px] font-bold text-white">
+                          {db.trash?.length}
+                        </span>
+                      )}
+                    </Link>
+                  );
+                })}
+              </nav>
+            </div>
+
+            <div className="p-4 border-t border-slate-800 text-sm space-y-2">
+              <Link
+                href="/"
+                onClick={() => setMobileNavOpen(false)}
+                className="flex min-h-[44px] items-center rounded-xl px-3 py-2 text-slate-300 hover:bg-slate-900 hover:text-white"
+              >
+                ← Public Website
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
 
       <main className="flex-1 min-w-0 p-4 sm:p-8 max-w-7xl w-full mx-auto">
         {children}

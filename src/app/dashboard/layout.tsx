@@ -13,10 +13,12 @@ import {
   LayoutDashboard,
   LogOut,
   Megaphone,
+  Menu,
   ShieldAlert,
   Trophy,
   User,
   Users,
+  X,
 } from "lucide-react";
 import { useApp } from "@/context/app-context";
 import { cn, formatDate, generateReferralCode } from "@/lib/utils";
@@ -43,6 +45,11 @@ export default function DashboardLayout({
 }) {
   const pathname = usePathname();
   const router = useRouter();
+  const [mobileNavOpen, setMobileNavOpen] = React.useState(false);
+
+  React.useEffect(() => {
+    setMobileNavOpen(false);
+  }, [pathname]);
   const {
     currentUser,
     currentAmbassador,
@@ -294,7 +301,7 @@ export default function DashboardLayout({
     <div className="min-h-screen flex flex-col lg:flex-row bg-slate-50">
       {/* Sidebar */}
       <aside className="w-full lg:w-64 shrink-0 border-b lg:border-b-0 lg:border-r border-slate-200 bg-white flex flex-col justify-between">
-        <div className="p-4 sm:p-5 space-y-5">
+        <div className="p-3 sm:p-5 lg:space-y-5">
           <div className="flex items-center justify-between gap-2">
             <Link href="/" className="flex items-center gap-2.5 min-w-0">
               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand-600 text-gold-400 font-extrabold text-sm shadow-sm">
@@ -312,21 +319,30 @@ export default function DashboardLayout({
             <div className="flex lg:hidden items-center gap-1.5 shrink-0">
               <Link
                 href="/"
-                className="rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100"
+                className="inline-flex min-h-[44px] items-center rounded-lg border border-slate-200 px-3 text-xs font-medium text-slate-600 hover:bg-slate-100"
               >
                 Site
               </Link>
               <button
                 type="button"
                 onClick={handleSignOut}
-                className="rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100"
+                className="inline-flex min-h-[44px] items-center rounded-lg border border-slate-200 px-3 text-xs font-medium text-slate-600 hover:bg-slate-100"
               >
                 Sign Out
+              </button>
+              <button
+                type="button"
+                onClick={() => setMobileNavOpen(true)}
+                className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg border border-slate-200 text-navy-900 hover:bg-slate-100"
+                aria-label="Open Dashboard Menu"
+                aria-expanded={mobileNavOpen}
+              >
+                <Menu className="h-5 w-5" />
               </button>
             </div>
           </div>
 
-          <div className="rounded-xl border border-brand-100 bg-surface p-3 space-y-1.5">
+          <div className="hidden lg:block rounded-xl border border-brand-100 bg-surface p-3 space-y-1.5">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-navy-900 truncate">
                 {activeAmb.fullName}
@@ -338,7 +354,7 @@ export default function DashboardLayout({
             </div>
           </div>
 
-          <nav className="flex lg:flex-col gap-1 overflow-x-auto pb-1 lg:pb-0">
+          <nav className="hidden lg:flex lg:flex-col gap-1">
             {NAV_ITEMS.map((item) => {
               const Icon = item.icon;
               const isActive =
@@ -392,6 +408,106 @@ export default function DashboardLayout({
           </button>
         </div>
       </aside>
+
+      {mobileNavOpen && (
+        <div className="fixed inset-0 z-50 lg:hidden flex">
+          <button
+            type="button"
+            aria-label="Close Dashboard Menu"
+            onClick={() => setMobileNavOpen(false)}
+            className="fixed inset-0 bg-slate-950/50 backdrop-blur-xs"
+          />
+          <div className="relative z-10 w-72 max-w-[85vw] h-full bg-white shadow-2xl flex flex-col justify-between overflow-y-auto">
+            <div className="p-4 space-y-4">
+              <div className="flex items-center justify-between gap-2">
+                <div className="min-w-0">
+                  <div className="text-sm font-bold text-navy-900 truncate">
+                    {activeAmb.fullName}
+                  </div>
+                  <div className="text-[11px] text-slate-500 truncate">
+                    Code: <span className="font-mono font-bold text-brand-600">{activeAmb.referralCode}</span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setMobileNavOpen(false)}
+                  aria-label="Close Dashboard Menu"
+                  className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl text-slate-600 hover:bg-slate-100"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              <div className="rounded-xl border border-brand-100 bg-surface p-3 space-y-1.5">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-xs font-bold text-navy-900 truncate">
+                    {activeAmb.institution || "SCDS Ambassador"}
+                  </span>
+                  <LevelBadge level={activeAmb.level} />
+                </div>
+              </div>
+
+              <nav className="flex flex-col gap-1">
+                {NAV_ITEMS.map((item) => {
+                  const Icon = item.icon;
+                  const isActive =
+                    item.href === "/dashboard"
+                      ? pathname === "/dashboard"
+                      : pathname.startsWith(item.href);
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={() => setMobileNavOpen(false)}
+                      className={cn(
+                        "flex min-h-[44px] items-center justify-between gap-2.5 rounded-xl px-3 py-2.5 text-sm font-semibold transition",
+                        isActive
+                          ? "bg-brand-600 text-white shadow-sm"
+                          : "text-charcoal hover:bg-surface hover:text-brand-600"
+                      )}
+                    >
+                      <span className="flex items-center gap-2.5">
+                        <Icon
+                          className={cn(
+                            "h-4 w-4",
+                            isActive ? "text-gold-400" : "text-slate-400"
+                          )}
+                        />
+                        {item.label}
+                      </span>
+                      {item.href === "/dashboard/notifications" && unreadCount > 0 && (
+                        <span className="rounded-full bg-gold-400 px-1.5 py-0.5 text-[10px] font-bold text-navy-900">
+                          {unreadCount}
+                        </span>
+                      )}
+                    </Link>
+                  );
+                })}
+              </nav>
+            </div>
+
+            <div className="p-4 border-t border-slate-200 space-y-2">
+              <Link
+                href="/"
+                onClick={() => setMobileNavOpen(false)}
+                className="flex min-h-[44px] items-center rounded-xl px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100"
+              >
+                ← Public Website
+              </Link>
+              <button
+                type="button"
+                onClick={() => {
+                  setMobileNavOpen(false);
+                  handleSignOut();
+                }}
+                className="flex min-h-[44px] w-full items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-rose-600 hover:bg-rose-50 transition"
+              >
+                <LogOut className="h-4 w-4" /> Sign Out
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Main Content */}
       <main className="flex-1 min-w-0 p-4 sm:p-8 max-w-6xl w-full mx-auto">
