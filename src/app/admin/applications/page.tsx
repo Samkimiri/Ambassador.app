@@ -410,25 +410,27 @@ export default function AdminApplicationsPage() {
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2 w-full lg:w-auto">
           <button
             type="button"
             onClick={handleBulkResendApproval}
             disabled={approvedWithoutEmail.length === 0 || Boolean(bulkProgress)}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-brand-200 bg-brand-50 px-3.5 py-2 text-xs font-semibold text-brand-700 hover:bg-brand-100 disabled:opacity-50 transition"
+            className="inline-flex min-h-[44px] w-full sm:w-auto items-center justify-center gap-1.5 rounded-xl border border-brand-200 bg-brand-50 px-3.5 py-2 text-xs font-semibold text-brand-700 hover:bg-brand-100 disabled:opacity-50 transition text-center"
             title="Send approval email to every approved ambassador who has not received one yet"
           >
-            <Send className="h-3.5 w-3.5" />
-            {bulkProgress
-              ? `Sending ${bulkProgress.current} of ${bulkProgress.total}...`
-              : `Resend to all approved without a sent email (${approvedWithoutEmail.length})`}
+            <Send className="h-3.5 w-3.5 shrink-0" />
+            <span>
+              {bulkProgress
+                ? `Sending ${bulkProgress.current} of ${bulkProgress.total}...`
+                : `Resend to all approved without a sent email (${approvedWithoutEmail.length})`}
+            </span>
           </button>
 
           <button
             type="button"
             onClick={handleManualRefresh}
             disabled={isRefreshing}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50 transition"
+            className="inline-flex min-h-[44px] w-full sm:w-auto items-center justify-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50 transition"
             title="Force refresh live database state"
           >
             <RotateCw
@@ -442,7 +444,7 @@ export default function AdminApplicationsPage() {
           <select
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
-            className="rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700"
+            className="min-h-[44px] w-full sm:w-auto rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-base sm:text-xs font-semibold text-slate-700"
           >
             <option value="ALL">All Applications ({sortedApplications.length})</option>
             <option value="pending">
@@ -565,19 +567,19 @@ export default function AdminApplicationsPage() {
 
                       {/* Active Referral Code if approved */}
                       {isApproved && matchingAmb?.referralCode && (
-                        <span className="inline-flex items-center gap-1 rounded-lg bg-emerald-100/70 border border-emerald-300 px-2.5 py-0.5 text-xs font-bold text-emerald-800">
-                          <ShieldCheck className="h-3.5 w-3.5 text-emerald-700" />
+                        <span className="inline-flex items-center gap-1 rounded-lg bg-emerald-100/70 border border-emerald-300 px-2.5 py-0.5 text-xs font-bold text-emerald-800 max-w-full break-all">
+                          <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-emerald-700" />
                           Code: {matchingAmb.referralCode}
                         </span>
                       )}
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-y-1 gap-x-3 text-xs text-slate-600">
-                      <span className="inline-flex items-center gap-1">
-                        <Mail className="h-3.5 w-3.5 text-slate-400" />
+                    <div className="flex flex-wrap items-center gap-y-1.5 gap-x-3 text-xs text-slate-600 min-w-0">
+                      <span className="inline-flex items-center gap-1 min-w-0 max-w-full">
+                        <Mail className="h-3.5 w-3.5 shrink-0 text-slate-400" />
                         <a
                           href={`mailto:${app.email}`}
-                          className="text-brand-600 hover:underline"
+                          className="text-brand-600 hover:underline break-all"
                         >
                           {app.email}
                         </a>
@@ -611,7 +613,7 @@ export default function AdminApplicationsPage() {
                       href={waUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-2 text-xs font-semibold text-white hover:bg-emerald-700 transition shadow-xs"
+                      className="inline-flex min-h-[44px] items-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-2 text-xs font-semibold text-white hover:bg-emerald-700 transition shadow-xs"
                       title="Open instant WhatsApp chat with applicant"
                     >
                       <MessageSquare className="h-3.5 w-3.5" />
@@ -619,7 +621,7 @@ export default function AdminApplicationsPage() {
                     </a>
                     <a
                       href={`mailto:${app.email}`}
-                      className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition"
+                      className="inline-flex min-h-[44px] items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition"
                     >
                       <Mail className="h-3.5 w-3.5 text-slate-500" />
                       Email
@@ -895,7 +897,7 @@ export default function AdminApplicationsPage() {
                     onChange={(e) =>
                       setNotesMap((prev) => ({ ...prev, [app.id]: e.target.value }))
                     }
-                    className="flex-1 rounded-xl border border-slate-300 px-3.5 py-2 text-xs focus:border-brand-600 focus:outline-none"
+                    className="flex-1 min-h-[44px] rounded-xl border border-slate-300 px-3.5 py-2 text-base sm:text-xs focus:border-brand-600 focus:outline-none"
                   />
 
                   <div className="flex flex-wrap items-center gap-2">
@@ -906,7 +908,7 @@ export default function AdminApplicationsPage() {
                         onClick={() =>
                           handleReview(app.id, "approved", app.fullName)
                         }
-                        className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-semibold text-white hover:bg-emerald-700 transition shadow-xs"
+                        className="inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-semibold text-white hover:bg-emerald-700 transition shadow-xs"
                       >
                         <CheckCircle2 className="h-3.5 w-3.5" /> Approve &amp; Issue Referral Code
                       </button>
@@ -946,7 +948,7 @@ export default function AdminApplicationsPage() {
                                 type="button"
                                 onClick={() => handleResendApprovalEmail(app)}
                                 disabled={isSendingThis || cooldownSecs > 0 || Boolean(bulkProgress)}
-                                className="inline-flex items-center gap-1.5 rounded-xl bg-brand-600 px-3.5 py-2 text-xs font-semibold text-white hover:bg-brand-700 disabled:opacity-50 transition shadow-xs"
+                                className="inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl bg-brand-600 px-3.5 py-2 text-xs font-semibold text-white hover:bg-brand-700 disabled:opacity-50 transition shadow-xs"
                                 title={`Send approval email to ${currentEmail}`}
                               >
                                 <Send className="h-3.5 w-3.5" />
@@ -961,12 +963,12 @@ export default function AdminApplicationsPage() {
                                   {!emailCheck.valid && (
                                     <div className="flex items-center gap-1.5 text-xs font-semibold text-amber-900">
                                       <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0" />
-                                      <span>
+                                      <span className="break-all">
                                         Invalid email warning ({app.email}): {emailCheck.reason}
                                       </span>
                                     </div>
                                   )}
-                                  <div className="flex flex-wrap items-center gap-2">
+                                  <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2">
                                     <input
                                       type="email"
                                       value={editedEmailMap[app.id] ?? app.email}
@@ -977,13 +979,13 @@ export default function AdminApplicationsPage() {
                                         }))
                                       }
                                       placeholder="Enter valid email (e.g. name@gmail.com)"
-                                      className="flex-1 min-w-[220px] rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-xs text-slate-900 focus:border-brand-600 focus:outline-none"
+                                      className="flex-1 min-w-0 w-full sm:w-auto min-h-[44px] rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-base sm:text-xs text-slate-900 focus:border-brand-600 focus:outline-none"
                                     />
                                     <button
                                       type="button"
                                       onClick={() => handleResendApprovalEmail(app)}
                                       disabled={isSendingThis || cooldownSecs > 0}
-                                      className="inline-flex items-center gap-1 rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-700 disabled:opacity-50 transition"
+                                      className="inline-flex min-h-[44px] items-center justify-center gap-1 rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-700 disabled:opacity-50 transition"
                                     >
                                       <Send className="h-3 w-3" />
                                       Save &amp; Send
@@ -1001,7 +1003,7 @@ export default function AdminApplicationsPage() {
                                       [app.id]: prev[app.id] ?? app.email,
                                     }));
                                   }}
-                                  className="inline-flex items-center gap-1 rounded-xl border border-slate-300 bg-white px-2.5 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition"
+                                  className="inline-flex min-h-[44px] items-center gap-1 rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition"
                                   title="Edit email before sending"
                                 >
                                   <Pencil className="h-3 w-3" />
@@ -1026,7 +1028,7 @@ export default function AdminApplicationsPage() {
                         onClick={() =>
                           handleReview(app.id, "rejected", app.fullName)
                         }
-                        className="inline-flex items-center gap-1.5 rounded-xl border border-rose-300 bg-rose-50 px-3.5 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-100 transition"
+                        className="inline-flex min-h-[44px] items-center gap-1.5 rounded-xl border border-rose-300 bg-rose-50 px-3.5 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-100 transition"
                       >
                         <XCircle className="h-3.5 w-3.5" /> Reject
                       </button>
@@ -1039,7 +1041,7 @@ export default function AdminApplicationsPage() {
                         onClick={() =>
                           handleReview(app.id, "suspended", app.fullName)
                         }
-                        className="rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 transition"
+                        className="inline-flex min-h-[44px] items-center rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 transition"
                       >
                         Suspend
                       </button>
@@ -1049,7 +1051,7 @@ export default function AdminApplicationsPage() {
                     <button
                       type="button"
                       onClick={() => handleDelete(app.id, app.fullName)}
-                      className={`inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold transition ${
+                      className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-semibold transition ${
                         isDeletingThis
                           ? "bg-rose-600 text-white hover:bg-rose-700 font-bold animate-pulse shadow-sm"
                           : "border border-rose-200 bg-white text-rose-600 hover:bg-rose-50 hover:border-rose-300"
