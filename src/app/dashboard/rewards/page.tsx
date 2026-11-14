@@ -147,7 +147,7 @@ export default function AmbassadorRewardsPage() {
                 required
                 value={amountKes}
                 onChange={(e) => setAmountKes(e.target.value)}
-                className="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-sm"
+                className="w-full min-h-[44px] rounded-xl border border-slate-300 px-3.5 py-2.5 text-base sm:text-sm"
               />
             </div>
 
@@ -160,7 +160,7 @@ export default function AmbassadorRewardsPage() {
                 onChange={(e) =>
                   setPaymentMethod(e.target.value as "MPESA" | "BANK_TRANSFER")
                 }
-                className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-sm"
+                className="w-full min-h-[44px] rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-base sm:text-sm"
               >
                 <option value="MPESA">M-Pesa Mobile Money (Kenya)</option>
                 <option value="BANK_TRANSFER">Kenyan Bank Transfer</option>
@@ -177,14 +177,14 @@ export default function AmbassadorRewardsPage() {
                 value={recipientPhone}
                 onChange={(e) => setRecipientPhone(e.target.value)}
                 placeholder="0712345678"
-                className="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-sm"
+                className="w-full min-h-[44px] rounded-xl border border-slate-300 px-3.5 py-2.5 text-base sm:text-sm"
               />
             </div>
 
             <button
               type="submit"
               disabled={amb.availableCommissionKes < db.rewardRules.minPayoutKes}
-              className="w-full rounded-xl bg-brand-600 py-3 text-xs font-semibold text-white hover:bg-brand-700 disabled:opacity-50"
+              className="w-full min-h-[44px] rounded-xl bg-brand-600 py-3 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-50"
             >
               {amb.availableCommissionKes < db.rewardRules.minPayoutKes
                 ? `Minimum ${formatKes(db.rewardRules.minPayoutKes)} Required`

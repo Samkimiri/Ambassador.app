@@ -68,7 +68,7 @@ export default function AdminRewardsPage() {
             </div>
           )}
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">
                 Points / Qualified Lead
@@ -77,7 +77,7 @@ export default function AdminRewardsPage() {
                 type="number"
                 value={pointsLead}
                 onChange={(e) => setPointsLead(e.target.value)}
-                className="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs"
+                className="w-full min-h-[44px] rounded-xl border border-slate-300 px-3 py-2 text-base sm:text-xs"
               />
             </div>
             <div>
@@ -88,12 +88,12 @@ export default function AdminRewardsPage() {
                 type="number"
                 value={pointsEnrolment}
                 onChange={(e) => setPointsEnrolment(e.target.value)}
-                className="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs"
+                className="w-full min-h-[44px] rounded-xl border border-slate-300 px-3 py-2 text-base sm:text-xs"
               />
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">
                 Base Commission (%)
@@ -102,7 +102,7 @@ export default function AdminRewardsPage() {
                 type="number"
                 value={defaultComm}
                 onChange={(e) => setDefaultComm(e.target.value)}
-                className="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs"
+                className="w-full min-h-[44px] rounded-xl border border-slate-300 px-3 py-2 text-base sm:text-xs"
               />
             </div>
             <div>
@@ -113,7 +113,7 @@ export default function AdminRewardsPage() {
                 type="number"
                 value={minPayout}
                 onChange={(e) => setMinPayout(e.target.value)}
-                className="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs"
+                className="w-full min-h-[44px] rounded-xl border border-slate-300 px-3 py-2 text-base sm:text-xs"
               />
             </div>
           </div>
@@ -126,13 +126,13 @@ export default function AdminRewardsPage() {
               type="number"
               value={windowDays}
               onChange={(e) => setWindowDays(e.target.value)}
-              className="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs"
+              className="w-full min-h-[44px] rounded-xl border border-slate-300 px-3 py-2 text-base sm:text-xs"
             />
           </div>
 
           <button
             type="submit"
-            className="w-full rounded-xl bg-brand-600 py-2.5 text-xs font-semibold text-white hover:bg-brand-700"
+            className="w-full min-h-[44px] rounded-xl bg-brand-600 py-2.5 text-sm sm:text-xs font-semibold text-white hover:bg-brand-700"
           >
             Save Reward Policy
           </button>

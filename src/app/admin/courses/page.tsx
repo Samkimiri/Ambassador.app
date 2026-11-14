@@ -124,11 +124,11 @@ export default function AdminCoursesPage() {
                 }
               }}
               placeholder="e.g. Blender 3D Animation"
-              className="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs"
+              className="w-full min-h-[44px] rounded-xl border border-slate-300 px-3 py-2 text-base sm:text-xs"
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-2">
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">
                 Slug *
@@ -138,7 +138,7 @@ export default function AdminCoursesPage() {
                 required
                 value={slug}
                 onChange={(e) => setSlug(e.target.value)}
-                className="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs font-mono"
+                className="w-full min-h-[44px] rounded-xl border border-slate-300 px-3 py-2 text-base sm:text-xs font-mono"
               />
             </div>
             <div>
@@ -150,12 +150,12 @@ export default function AdminCoursesPage() {
                 value={shortCode}
                 onChange={(e) => setShortCode(e.target.value.toUpperCase())}
                 placeholder="3D"
-                className="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs font-mono"
+                className="w-full min-h-[44px] rounded-xl border border-slate-300 px-3 py-2 text-base sm:text-xs font-mono"
               />
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-2">
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">
                 Duration
@@ -164,7 +164,7 @@ export default function AdminCoursesPage() {
                 type="text"
                 value={duration}
                 onChange={(e) => setDuration(e.target.value)}
-                className="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs"
+                className="w-full min-h-[44px] rounded-xl border border-slate-300 px-3 py-2 text-base sm:text-xs"
               />
             </div>
             <div>
@@ -175,12 +175,12 @@ export default function AdminCoursesPage() {
                 type="number"
                 value={publishedFeeKes}
                 onChange={(e) => setPublishedFeeKes(e.target.value)}
-                className="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs"
+                className="w-full min-h-[44px] rounded-xl border border-slate-300 px-3 py-2 text-base sm:text-xs"
               />
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-2">
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">
                 Commission %
@@ -189,7 +189,7 @@ export default function AdminCoursesPage() {
                 type="number"
                 value={commissionRatePct}
                 onChange={(e) => setCommissionRatePct(e.target.value)}
-                className="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs"
+                className="w-full min-h-[44px] rounded-xl border border-slate-300 px-3 py-2 text-base sm:text-xs"
               />
             </div>
             <div>
@@ -200,7 +200,7 @@ export default function AdminCoursesPage() {
                 type="number"
                 value={pointsReward}
                 onChange={(e) => setPointsReward(e.target.value)}
-                className="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs"
+                className="w-full min-h-[44px] rounded-xl border border-slate-300 px-3 py-2 text-base sm:text-xs"
               />
             </div>
           </div>
@@ -214,13 +214,13 @@ export default function AdminCoursesPage() {
               required
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs"
+              className="w-full min-h-[44px] rounded-xl border border-slate-300 px-3 py-2 text-base sm:text-xs"
             />
           </div>
 
           <button
             type="submit"
-            className="w-full rounded-xl bg-brand-600 py-2.5 text-xs font-semibold text-white hover:bg-brand-700"
+            className="w-full min-h-[44px] rounded-xl bg-brand-600 py-2.5 text-sm sm:text-xs font-semibold text-white hover:bg-brand-700"
           >
             {editingId ? "Save Course Updates" : "Save Course"}
           </button>

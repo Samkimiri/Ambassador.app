@@ -105,7 +105,7 @@ export default function AdminCampaignsPage() {
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Holiday Creative Bootcamp Drive"
-              className="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs"
+              className="w-full min-h-[44px] rounded-xl border border-slate-300 px-3 py-2 text-base sm:text-xs"
             />
           </div>
           <div>
@@ -117,7 +117,7 @@ export default function AdminCampaignsPage() {
               required
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs"
+              className="w-full min-h-[44px] rounded-xl border border-slate-300 px-3 py-2 text-base sm:text-xs"
             />
           </div>
           <div>
@@ -130,7 +130,7 @@ export default function AdminCampaignsPage() {
               value={objective}
               onChange={(e) => setObjective(e.target.value)}
               placeholder="e.g. 50 verified enrolments"
-              className="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs"
+              className="w-full min-h-[44px] rounded-xl border border-slate-300 px-3 py-2 text-base sm:text-xs"
             />
           </div>
           <div>
@@ -143,10 +143,10 @@ export default function AdminCampaignsPage() {
               value={targetAudience}
               onChange={(e) => setTargetAudience(e.target.value)}
               placeholder="Campus design & engineering clubs"
-              className="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs"
+              className="w-full min-h-[44px] rounded-xl border border-slate-300 px-3 py-2 text-base sm:text-xs"
             />
           </div>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-2">
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">
                 Start Date
@@ -155,7 +155,7 @@ export default function AdminCampaignsPage() {
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs"
+                className="w-full min-h-[44px] rounded-xl border border-slate-300 px-3 py-2 text-base sm:text-xs"
               />
             </div>
             <div>
@@ -166,11 +166,11 @@ export default function AdminCampaignsPage() {
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
-                className="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs"
+                className="w-full min-h-[44px] rounded-xl border border-slate-300 px-3 py-2 text-base sm:text-xs"
               />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-2">
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">
                 Bonus Points / Enrolment
@@ -179,7 +179,7 @@ export default function AdminCampaignsPage() {
                 type="number"
                 value={bonusPoints}
                 onChange={(e) => setBonusPoints(e.target.value)}
-                className="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs"
+                className="w-full min-h-[44px] rounded-xl border border-slate-300 px-3 py-2 text-base sm:text-xs"
               />
             </div>
             <div>
@@ -190,7 +190,7 @@ export default function AdminCampaignsPage() {
                 type="number"
                 value={bonusComm}
                 onChange={(e) => setBonusComm(e.target.value)}
-                className="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs"
+                className="w-full min-h-[44px] rounded-xl border border-slate-300 px-3 py-2 text-base sm:text-xs"
               />
             </div>
           </div>

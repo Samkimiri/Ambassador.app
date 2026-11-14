@@ -119,7 +119,7 @@ function ResetPasswordForm() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="you@example.com"
-                    className="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm focus:border-brand-600 focus:outline-none"
+                    className="w-full min-h-[44px] rounded-xl border border-slate-300 px-3.5 py-2.5 text-base sm:text-sm focus:border-brand-600 focus:outline-none"
                   />
                 </div>
                 <div>
@@ -134,7 +134,7 @@ function ResetPasswordForm() {
                     value={code}
                     onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
                     placeholder="e.g. 482910"
-                    className="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm font-mono tracking-widest focus:border-brand-600 focus:outline-none"
+                    className="w-full min-h-[44px] rounded-xl border border-slate-300 px-3.5 py-2.5 text-base sm:text-sm font-mono tracking-widest focus:border-brand-600 focus:outline-none"
                   />
                 </div>
               </>
@@ -149,7 +149,7 @@ function ResetPasswordForm() {
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 placeholder="At least 6 characters"
-                className="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm focus:border-brand-600 focus:outline-none"
+                className="w-full min-h-[44px] rounded-xl border border-slate-300 px-3.5 py-2.5 text-base sm:text-sm focus:border-brand-600 focus:outline-none"
               />
             </div>
             <div>
@@ -162,13 +162,13 @@ function ResetPasswordForm() {
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="Repeat new password"
-                className="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm focus:border-brand-600 focus:outline-none"
+                className="w-full min-h-[44px] rounded-xl border border-slate-300 px-3.5 py-2.5 text-base sm:text-sm focus:border-brand-600 focus:outline-none"
               />
             </div>
             <button
               type="submit"
               disabled={loading}
-              className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-brand-600 py-3 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-60"
+              className="w-full min-h-[44px] inline-flex items-center justify-center gap-2 rounded-xl bg-brand-600 py-3 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-60"
             >
               {loading && <Loader2 className="h-4 w-4 animate-spin" />}
               {loading ? "Updating Password..." : "Update Password"}

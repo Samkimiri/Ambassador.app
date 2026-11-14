@@ -40,21 +40,21 @@ export default function CoursesPage() {
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="relative">
+          <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-3 w-full sm:w-auto">
+            <div className="relative w-full sm:w-auto">
               <Search className="h-4 w-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
               <input
                 type="search"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search courses..."
-                className="rounded-xl border border-slate-300 bg-white pl-9 pr-4 py-2 text-sm focus:border-brand-600 focus:outline-none"
+                className="w-full sm:w-56 min-h-[44px] rounded-xl border border-slate-300 bg-white pl-9 pr-4 py-2 text-base sm:text-sm focus:border-brand-600 focus:outline-none"
               />
             </div>
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm focus:border-brand-600 focus:outline-none"
+              className="w-full sm:w-auto min-h-[44px] rounded-xl border border-slate-300 bg-white px-3 py-2 text-base sm:text-sm focus:border-brand-600 focus:outline-none"
             >
               {categories.map((cat) => (
                 <option key={cat} value={cat}>

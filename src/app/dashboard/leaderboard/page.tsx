@@ -40,7 +40,7 @@ export default function DashboardLeaderboardPage() {
         <select
           value={period}
           onChange={(e) => setPeriod(e.target.value as typeof period)}
-          className="rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700"
+          className="w-full sm:w-auto min-h-[44px] rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-base sm:text-xs font-semibold text-slate-700"
         >
           <option value="all_time">All-Time Performance</option>
           <option value="current_month">Current Month</option>

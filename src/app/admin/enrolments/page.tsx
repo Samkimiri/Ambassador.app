@@ -127,7 +127,7 @@ export default function AdminEnrolmentsPage() {
               <select
                 value={selectedRefId}
                 onChange={(e) => setSelectedRefId(e.target.value)}
-                className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-xs"
+                className="w-full min-h-[44px] rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-base sm:text-xs"
               >
                 <option value="">-- Select Referred Learner --</option>
                 {unverifiedReferrals.map((r) => (
@@ -150,7 +150,7 @@ export default function AdminEnrolmentsPage() {
                   setPaymentReference(e.target.value.toUpperCase())
                 }
                 placeholder="e.g. QL18TR50KP"
-                className="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs font-mono uppercase"
+                className="w-full min-h-[44px] rounded-xl border border-slate-300 px-3.5 py-2 text-base sm:text-xs font-mono uppercase"
               />
             </div>
 
@@ -163,7 +163,7 @@ export default function AdminEnrolmentsPage() {
                 value={amountPaidKes}
                 onChange={(e) => setAmountPaidKes(e.target.value)}
                 placeholder="e.g. 3500"
-                className="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs"
+                className="w-full min-h-[44px] rounded-xl border border-slate-300 px-3.5 py-2 text-base sm:text-xs"
               />
             </div>
 
@@ -176,13 +176,13 @@ export default function AdminEnrolmentsPage() {
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="Confirmed on SCDS M-Pesa 0743475247"
-                className="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs"
+                className="w-full min-h-[44px] rounded-xl border border-slate-300 px-3.5 py-2 text-base sm:text-xs"
               />
             </div>
 
             <button
               type="submit"
-              className="w-full rounded-xl bg-emerald-600 py-3 text-xs font-semibold text-white hover:bg-emerald-700"
+              className="w-full min-h-[44px] rounded-xl bg-emerald-600 py-3 text-sm sm:text-xs font-semibold text-white hover:bg-emerald-700"
             >
               Verify Payment &amp; Issue Ambassador Rewards
             </button>

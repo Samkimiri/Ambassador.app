@@ -97,7 +97,7 @@ export default function AdminResourcesPage() {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="e.g. Illustrator Vector Logo Pack Flier"
-              className="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs"
+              className="w-full min-h-[44px] rounded-xl border border-slate-300 px-3 py-2 text-base sm:text-xs"
             />
           </div>
           <div>
@@ -107,7 +107,7 @@ export default function AdminResourcesPage() {
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value as AssetCategory)}
-              className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs"
+              className="w-full min-h-[44px] rounded-xl border border-slate-300 bg-white px-3 py-2 text-base sm:text-xs"
             >
               <option value="Course Posters">Course Posters</option>
               <option value="Social Media Graphics">Social Media Graphics</option>
@@ -138,7 +138,7 @@ export default function AdminResourcesPage() {
               required
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs"
+              className="w-full min-h-[44px] rounded-xl border border-slate-300 px-3 py-2 text-base sm:text-xs"
             />
           </div>
           <div>
@@ -151,7 +151,7 @@ export default function AdminResourcesPage() {
               required
               value={captionTemplate}
               onChange={(e) => setCaptionTemplate(e.target.value)}
-              className="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs"
+              className="w-full min-h-[44px] rounded-xl border border-slate-300 px-3 py-2 text-base sm:text-xs"
             />
           </div>
           <div>
@@ -162,12 +162,12 @@ export default function AdminResourcesPage() {
               type="text"
               value={usageInstructions}
               onChange={(e) => setUsageInstructions(e.target.value)}
-              className="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs"
+              className="w-full min-h-[44px] rounded-xl border border-slate-300 px-3 py-2 text-base sm:text-xs"
             />
           </div>
           <button
             type="submit"
-            className="w-full rounded-xl bg-brand-600 py-2.5 text-xs font-semibold text-white hover:bg-brand-700"
+            className="w-full min-h-[44px] rounded-xl bg-brand-600 py-2.5 text-sm sm:text-xs font-semibold text-white hover:bg-brand-700"
           >
             Publish Resource
           </button>

@@ -46,21 +46,21 @@ export default function AmbassadorReferralsPage() {
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="relative">
+        <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2 w-full sm:w-auto">
+          <div className="relative w-full sm:w-auto">
             <Search className="h-4 w-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="search"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search learner or course..."
-              className="rounded-xl border border-slate-300 bg-white pl-9 pr-3 py-2 text-xs focus:border-brand-600 focus:outline-none"
+              className="w-full sm:w-56 min-h-[44px] rounded-xl border border-slate-300 bg-white pl-9 pr-3 py-2 text-base sm:text-xs focus:border-brand-600 focus:outline-none"
             />
           </div>
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-700"
+            className="w-full sm:w-auto min-h-[44px] rounded-xl border border-slate-300 bg-white px-3 py-2 text-base sm:text-xs font-medium text-slate-700"
           >
             <option value="ALL">All Statuses</option>
             <option value="lead_submitted">Lead Submitted</option>

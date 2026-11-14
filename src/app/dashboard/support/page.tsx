@@ -68,7 +68,7 @@ export default function AmbassadorSupportPage() {
                 onChange={(e) =>
                   setCategory(e.target.value as SupportRequest["category"])
                 }
-                className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-xs font-medium"
+                className="w-full min-h-[44px] rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-base sm:text-sm font-medium"
               >
                 <option value="Attribution Review">
                   Referral Attribution Review
@@ -94,7 +94,7 @@ export default function AmbassadorSupportPage() {
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
                 placeholder="e.g. M-Pesa receipt verification for learner"
-                className="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs"
+                className="w-full min-h-[44px] rounded-xl border border-slate-300 px-3.5 py-2.5 text-base sm:text-sm"
               />
             </div>
 
@@ -108,13 +108,13 @@ export default function AmbassadorSupportPage() {
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 placeholder="Provide learner email, M-Pesa reference, or event details..."
-                className="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs"
+                className="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-base sm:text-sm"
               />
             </div>
 
             <button
               type="submit"
-              className="w-full rounded-xl bg-brand-600 py-2.5 text-xs font-semibold text-white hover:bg-brand-700"
+              className="w-full min-h-[44px] rounded-xl bg-brand-600 py-2.5 text-sm font-semibold text-white hover:bg-brand-700"
             >
               Submit Support Ticket
             </button>

@@ -272,7 +272,7 @@ function JoinEnquiryFormContent() {
                 value={learnerName}
                 onChange={(e) => setLearnerName(e.target.value)}
                 placeholder="e.g. Daniel Kiprop"
-                className="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm focus:border-brand-600 focus:outline-none"
+                className="w-full min-h-[44px] rounded-xl border border-slate-300 px-3.5 py-2.5 text-base sm:text-sm focus:border-brand-600 focus:outline-none"
               />
             </div>
             <div>
@@ -285,7 +285,7 @@ function JoinEnquiryFormContent() {
                 value={learnerEmail}
                 onChange={(e) => setLearnerEmail(e.target.value)}
                 placeholder="you@example.com"
-                className="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm focus:border-brand-600 focus:outline-none"
+                className="w-full min-h-[44px] rounded-xl border border-slate-300 px-3.5 py-2.5 text-base sm:text-sm focus:border-brand-600 focus:outline-none"
               />
             </div>
           </div>
@@ -301,7 +301,7 @@ function JoinEnquiryFormContent() {
                 value={learnerPhone}
                 onChange={(e) => setLearnerPhone(e.target.value)}
                 placeholder="0712345678"
-                className="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm focus:border-brand-600 focus:outline-none"
+                className="w-full min-h-[44px] rounded-xl border border-slate-300 px-3.5 py-2.5 text-base sm:text-sm focus:border-brand-600 focus:outline-none"
               />
             </div>
             <div>
@@ -314,7 +314,7 @@ function JoinEnquiryFormContent() {
                 value={learnerCounty}
                 onChange={(e) => setLearnerCounty(e.target.value)}
                 placeholder="e.g. Nairobi, Kiambu, Nakuru"
-                className="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm focus:border-brand-600 focus:outline-none"
+                className="w-full min-h-[44px] rounded-xl border border-slate-300 px-3.5 py-2.5 text-base sm:text-sm focus:border-brand-600 focus:outline-none"
               />
             </div>
           </div>
@@ -327,7 +327,7 @@ function JoinEnquiryFormContent() {
               <select
                 value={courseId}
                 onChange={(e) => setCourseId(e.target.value)}
-                className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm focus:border-brand-600 focus:outline-none"
+                className="w-full min-h-[44px] rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-base sm:text-sm focus:border-brand-600 focus:outline-none"
               >
                 {db.courses
                   .filter((c) => c.status === "published")
@@ -347,7 +347,7 @@ function JoinEnquiryFormContent() {
                 value={referralCode}
                 onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
                 placeholder="e.g. SCDS-AMI-8K4P"
-                className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2.5 text-sm font-mono uppercase focus:border-brand-600 focus:outline-none"
+                className="w-full min-h-[44px] rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2.5 text-base sm:text-sm font-mono uppercase focus:border-brand-600 focus:outline-none"
               />
             </div>
           </div>
@@ -361,16 +361,16 @@ function JoinEnquiryFormContent() {
               value={enquiryNotes}
               onChange={(e) => setEnquiryNotes(e.target.value)}
               placeholder="Tell us about your current skill level or what you want to build..."
-              className="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-sm focus:border-brand-600 focus:outline-none"
+              className="w-full min-h-[44px] rounded-xl border border-slate-300 px-3.5 py-2.5 text-base sm:text-sm focus:border-brand-600 focus:outline-none"
             />
           </div>
 
-          <label className="flex items-start gap-2.5 text-xs text-slate-600 cursor-pointer">
+          <label className="flex min-h-[44px] items-start gap-2.5 text-xs text-slate-600 cursor-pointer py-1">
             <input
               type="checkbox"
               checked={consentGiven}
               onChange={(e) => setConsentGiven(e.target.checked)}
-              className="mt-0.5 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+              className="mt-0.5 h-5 w-5 shrink-0 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
             />
             <span>
               I consent to Sam Creative Design School contacting me via WhatsApp,
@@ -380,7 +380,7 @@ function JoinEnquiryFormContent() {
 
           <button
             type="submit"
-            className="w-full rounded-xl bg-brand-600 py-3.5 text-sm font-semibold text-white shadow-sm hover:bg-brand-700 transition"
+            className="w-full min-h-[44px] rounded-xl bg-brand-600 py-3.5 text-sm font-semibold text-white shadow-sm hover:bg-brand-700 transition"
           >
             Submit Course Enquiry &amp; Reserve Seat
           </button>

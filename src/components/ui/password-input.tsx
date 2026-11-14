@@ -16,14 +16,14 @@ export function PasswordInput({ className = "", ...props }: PasswordInputProps) 
       <input
         {...props}
         type={visible ? "text" : "password"}
-        className={`pr-10 ${className}`.trim()}
+        className={`pr-12 ${className}`.trim()}
       />
       <button
         type="button"
         onClick={() => setVisible((prev) => !prev)}
         aria-label={visible ? "Hide password" : "Show password"}
         title={visible ? "Hide password" : "Show password"}
-        className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600 focus:outline-none"
+        className="absolute inset-y-0 right-0 flex w-11 min-h-[44px] items-center justify-center text-slate-400 hover:text-slate-600 focus:outline-none"
       >
         {visible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
       </button>

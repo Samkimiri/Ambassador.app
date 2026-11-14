@@ -73,7 +73,7 @@ export default function AdminSettingsPage() {
                   {req.category} · {formatDateTime(req.createdAt)}
                 </div>
 
-                <div className="flex gap-2 pt-1">
+                <div className="flex flex-col sm:flex-row gap-2 pt-1">
                   <input
                     type="text"
                     placeholder="Write official response..."
@@ -84,7 +84,7 @@ export default function AdminSettingsPage() {
                         [req.id]: e.target.value,
                       }))
                     }
-                    className="flex-1 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs"
+                    className="flex-1 min-h-[44px] rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-base sm:text-xs"
                   />
                   <button
                     type="button"
@@ -95,7 +95,7 @@ export default function AdminSettingsPage() {
                         "resolved"
                       )
                     }
-                    className="rounded-lg bg-slate-950 px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-slate-800"
+                    className="min-h-[44px] rounded-lg bg-slate-950 px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-slate-800"
                   >
                     Send &amp; Resolve
                   </button>

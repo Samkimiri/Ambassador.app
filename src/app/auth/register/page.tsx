@@ -131,7 +131,7 @@ export default function RegisterApplicationPage() {
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   placeholder="e.g. Joy Wambui"
-                  className="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm focus:border-brand-600 focus:outline-none"
+                  className="w-full min-h-[44px] rounded-xl border border-slate-300 px-3.5 py-2.5 text-base sm:text-sm focus:border-brand-600 focus:outline-none"
                 />
               </div>
               <div>
@@ -144,7 +144,7 @@ export default function RegisterApplicationPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@university.ac.ke"
-                  className="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm focus:border-brand-600 focus:outline-none"
+                  className="w-full min-h-[44px] rounded-xl border border-slate-300 px-3.5 py-2.5 text-base sm:text-sm focus:border-brand-600 focus:outline-none"
                 />
               </div>
             </div>
@@ -160,7 +160,7 @@ export default function RegisterApplicationPage() {
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   placeholder="0712345678"
-                  className="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm focus:border-brand-600 focus:outline-none"
+                  className="w-full min-h-[44px] rounded-xl border border-slate-300 px-3.5 py-2.5 text-base sm:text-sm focus:border-brand-600 focus:outline-none"
                 />
               </div>
               <div>
@@ -173,7 +173,7 @@ export default function RegisterApplicationPage() {
                   value={county}
                   onChange={(e) => setCounty(e.target.value)}
                   placeholder="Nairobi, Kiambu, Mombasa..."
-                  className="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm focus:border-brand-600 focus:outline-none"
+                  className="w-full min-h-[44px] rounded-xl border border-slate-300 px-3.5 py-2.5 text-base sm:text-sm focus:border-brand-600 focus:outline-none"
                 />
               </div>
               <div>
@@ -185,7 +185,7 @@ export default function RegisterApplicationPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Min 8 characters"
-                  className="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm focus:border-brand-600 focus:outline-none"
+                  className="w-full min-h-[44px] rounded-xl border border-slate-300 px-3.5 py-2.5 text-base sm:text-sm focus:border-brand-600 focus:outline-none"
                 />
               </div>
             </div>
@@ -200,7 +200,7 @@ export default function RegisterApplicationPage() {
                   value={institution}
                   onChange={(e) => setInstitution(e.target.value)}
                   placeholder="e.g. JKUAT, UoN, TUK, Freelance Collective"
-                  className="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm focus:border-brand-600 focus:outline-none"
+                  className="w-full min-h-[44px] rounded-xl border border-slate-300 px-3.5 py-2.5 text-base sm:text-sm focus:border-brand-600 focus:outline-none"
                 />
               </div>
               <div>
@@ -210,7 +210,7 @@ export default function RegisterApplicationPage() {
                 <select
                   value={occupation}
                   onChange={(e) => setOccupation(e.target.value)}
-                  className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm focus:border-brand-600 focus:outline-none"
+                  className="w-full min-h-[44px] rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-base sm:text-sm focus:border-brand-600 focus:outline-none"
                 >
                   <option value="University / College Student">
                     University / College Student
@@ -255,7 +255,7 @@ export default function RegisterApplicationPage() {
                   <select
                     value={academicYear}
                     onChange={(e) => setAcademicYear(e.target.value)}
-                    className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm focus:border-brand-600 focus:outline-none"
+                    className="w-full min-h-[44px] rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-base sm:text-sm focus:border-brand-600 focus:outline-none"
                   >
                     <option value="1st Year Undergraduate">1st Year Undergraduate</option>
                     <option value="2nd Year Undergraduate">2nd Year Undergraduate</option>
@@ -275,7 +275,7 @@ export default function RegisterApplicationPage() {
                     value={studyField}
                     onChange={(e) => setStudyField(e.target.value)}
                     placeholder="e.g. Graphic Design, Computer Science, Engineering, Marketing"
-                    className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm focus:border-brand-600 focus:outline-none"
+                    className="w-full min-h-[44px] rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-base sm:text-sm focus:border-brand-600 focus:outline-none"
                   />
                 </div>
 
@@ -286,7 +286,7 @@ export default function RegisterApplicationPage() {
                   <select
                     value={audienceSize}
                     onChange={(e) => setAudienceSize(e.target.value)}
-                    className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm focus:border-brand-600 focus:outline-none"
+                    className="w-full min-h-[44px] rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-base sm:text-sm focus:border-brand-600 focus:outline-none"
                   >
                     <option value="Under 100 peers (Close circle & study groups)">Under 100 peers (Close circle &amp; study groups)</option>
                     <option value="100 - 500 peers / campus contacts">100 - 500 peers / campus contacts</option>
@@ -302,7 +302,7 @@ export default function RegisterApplicationPage() {
                   <select
                     value={weeklyHours}
                     onChange={(e) => setWeeklyHours(e.target.value)}
-                    className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm focus:border-brand-600 focus:outline-none"
+                    className="w-full min-h-[44px] rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-base sm:text-sm focus:border-brand-600 focus:outline-none"
                   >
                     <option value="3 - 5 hours/week (Part-time / Weekends)">3 - 5 hours/week (Part-time / Weekends)</option>
                     <option value="5 - 10 hours/week (Active Ambassador)">5 - 10 hours/week (Active Ambassador)</option>
@@ -318,7 +318,7 @@ export default function RegisterApplicationPage() {
                   <select
                     value={deviceReadiness}
                     onChange={(e) => setDeviceReadiness(e.target.value)}
-                    className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm focus:border-brand-600 focus:outline-none"
+                    className="w-full min-h-[44px] rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-base sm:text-sm focus:border-brand-600 focus:outline-none"
                   >
                     <option value="Laptop & Smartphone with stable 4G/Wi-Fi">Laptop &amp; Smartphone with stable 4G/Wi-Fi (Optimal)</option>
                     <option value="Laptop only with stable Wi-Fi">Laptop only with stable Wi-Fi</option>
@@ -333,7 +333,7 @@ export default function RegisterApplicationPage() {
                   <select
                     value={pastAmbassadorExperience}
                     onChange={(e) => setPastAmbassadorExperience(e.target.value)}
-                    className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm focus:border-brand-600 focus:outline-none"
+                    className="w-full min-h-[44px] rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-base sm:text-sm focus:border-brand-600 focus:outline-none"
                   >
                     <option value="Campus Club / Society Leader">Campus Club / Society Leader</option>
                     <option value="Class Representative / Academic Lead">Class Representative / Academic Lead</option>
@@ -393,7 +393,7 @@ export default function RegisterApplicationPage() {
                   value={resumeUrl}
                   onChange={(e) => setResumeUrl(e.target.value)}
                   placeholder="https://drive.google.com/your-cv-or-portfolio.pdf"
-                  className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm focus:border-brand-600 focus:outline-none"
+                  className="w-full min-h-[44px] rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-base sm:text-sm focus:border-brand-600 focus:outline-none"
                 />
               </div>
             </div>
@@ -412,7 +412,7 @@ export default function RegisterApplicationPage() {
                     value={linkedin}
                     onChange={(e) => setLinkedin(e.target.value)}
                     placeholder="https://linkedin.com/in/yourprofile"
-                    className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm focus:border-brand-600 focus:outline-none"
+                    className="w-full min-h-[44px] rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-base sm:text-sm focus:border-brand-600 focus:outline-none"
                   />
                 </div>
                 <div>
@@ -424,7 +424,7 @@ export default function RegisterApplicationPage() {
                     value={instagram}
                     onChange={(e) => setInstagram(e.target.value)}
                     placeholder="@yourhandle or URL"
-                    className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm focus:border-brand-600 focus:outline-none"
+                    className="w-full min-h-[44px] rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-base sm:text-sm focus:border-brand-600 focus:outline-none"
                   />
                 </div>
                 <div>
@@ -436,7 +436,7 @@ export default function RegisterApplicationPage() {
                     value={tiktok}
                     onChange={(e) => setTiktok(e.target.value)}
                     placeholder="@yourtiktok"
-                    className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm focus:border-brand-600 focus:outline-none"
+                    className="w-full min-h-[44px] rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-base sm:text-sm focus:border-brand-600 focus:outline-none"
                   />
                 </div>
                 <div>
@@ -448,7 +448,7 @@ export default function RegisterApplicationPage() {
                     value={twitter}
                     onChange={(e) => setTwitter(e.target.value)}
                     placeholder="@yourhandle or https://x.com/..."
-                    className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm focus:border-brand-600 focus:outline-none"
+                    className="w-full min-h-[44px] rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-base sm:text-sm focus:border-brand-600 focus:outline-none"
                   />
                 </div>
                 <div className="sm:col-span-2">
@@ -460,7 +460,7 @@ export default function RegisterApplicationPage() {
                     value={portfolio}
                     onChange={(e) => setPortfolio(e.target.value)}
                     placeholder="https://yourportfolio.com or Behance / GitHub"
-                    className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm focus:border-brand-600 focus:outline-none"
+                    className="w-full min-h-[44px] rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-base sm:text-sm focus:border-brand-600 focus:outline-none"
                   />
                 </div>
               </div>
@@ -474,7 +474,7 @@ export default function RegisterApplicationPage() {
                 <select
                   value={promotionStrategy}
                   onChange={(e) => setPromotionStrategy(e.target.value)}
-                  className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm focus:border-brand-600 focus:outline-none"
+                  className="w-full min-h-[44px] rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-base sm:text-sm focus:border-brand-600 focus:outline-none"
                 >
                   <option value="WhatsApp Student Groups & Status">WhatsApp Student Groups &amp; Status</option>
                   <option value="Campus & Class Peer Outreach">Campus &amp; Class Peer Outreach</option>
@@ -491,7 +491,7 @@ export default function RegisterApplicationPage() {
                 <select
                   value={targetAudience}
                   onChange={(e) => setTargetAudience(e.target.value)}
-                  className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm focus:border-brand-600 focus:outline-none"
+                  className="w-full min-h-[44px] rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-base sm:text-sm focus:border-brand-600 focus:outline-none"
                 >
                   <option value="University / College Undergraduates">University / College Undergraduates</option>
                   <option value="High School Leavers & Pre-University">High School Leavers &amp; Pre-University</option>
@@ -512,7 +512,7 @@ export default function RegisterApplicationPage() {
                 value={motivation}
                 onChange={(e) => setMotivation(e.target.value)}
                 placeholder="Why do you want to represent Sam Creative Design School, and which courses excite your community most?"
-                className="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm focus:border-brand-600 focus:outline-none"
+                className="w-full min-h-[44px] rounded-xl border border-slate-300 px-3.5 py-2.5 text-base sm:text-sm focus:border-brand-600 focus:outline-none"
               />
             </div>
 
@@ -526,16 +526,16 @@ export default function RegisterApplicationPage() {
                 value={experience}
                 onChange={(e) => setExperience(e.target.value)}
                 placeholder="Share any student leadership roles, creative projects, WhatsApp communities, or social channels you manage..."
-                className="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm focus:border-brand-600 focus:outline-none"
+                className="w-full min-h-[44px] rounded-xl border border-slate-300 px-3.5 py-2.5 text-base sm:text-sm focus:border-brand-600 focus:outline-none"
               />
             </div>
 
-            <label className="flex items-start gap-2.5 text-xs text-slate-600 cursor-pointer">
+            <label className="flex min-h-[44px] items-start gap-2.5 text-xs text-slate-600 cursor-pointer py-1">
               <input
                 type="checkbox"
                 checked={acceptedTerms}
                 onChange={(e) => setAcceptedTerms(e.target.checked)}
-                className="mt-0.5 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+                className="mt-0.5 h-5 w-5 shrink-0 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
               />
               <span>
                 I accept the{" "}
@@ -548,7 +548,7 @@ export default function RegisterApplicationPage() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full rounded-xl bg-brand-600 py-3.5 text-sm font-semibold text-white shadow-sm hover:bg-brand-700 transition disabled:opacity-60 disabled:cursor-not-allowed"
+              className="w-full min-h-[44px] rounded-xl bg-brand-600 py-3.5 text-sm font-semibold text-white shadow-sm hover:bg-brand-700 transition disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {isSubmitting
                 ? "Submitting Application..."

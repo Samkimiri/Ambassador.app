@@ -196,7 +196,7 @@ export default function AmbassadorProfilePage() {
                   required
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
-                  className="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm focus:border-brand-600 focus:outline-none"
+                  className="w-full min-h-[44px] rounded-xl border border-slate-300 px-3.5 py-2.5 text-base sm:text-sm focus:border-brand-600 focus:outline-none"
                 />
               </div>
               <div>
@@ -208,7 +208,7 @@ export default function AmbassadorProfilePage() {
                   required
                   value={payoutPhone}
                   onChange={(e) => setPayoutPhone(e.target.value)}
-                  className="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm focus:border-brand-600 focus:outline-none"
+                  className="w-full min-h-[44px] rounded-xl border border-slate-300 px-3.5 py-2.5 text-base sm:text-sm focus:border-brand-600 focus:outline-none"
                 />
                 <p className="text-[11px] text-slate-500 mt-1">
                   Automated B2C commission disbursements are paid directly to this number.
@@ -226,7 +226,7 @@ export default function AmbassadorProfilePage() {
                   required
                   value={county}
                   onChange={(e) => setCounty(e.target.value)}
-                  className="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm focus:border-brand-600 focus:outline-none"
+                  className="w-full min-h-[44px] rounded-xl border border-slate-300 px-3.5 py-2.5 text-base sm:text-sm focus:border-brand-600 focus:outline-none"
                 />
               </div>
               <div>
@@ -238,7 +238,7 @@ export default function AmbassadorProfilePage() {
                   value={institution}
                   onChange={(e) => setInstitution(e.target.value)}
                   placeholder="e.g. University of Nairobi, Strathmore, TUK"
-                  className="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm focus:border-brand-600 focus:outline-none"
+                  className="w-full min-h-[44px] rounded-xl border border-slate-300 px-3.5 py-2.5 text-base sm:text-sm focus:border-brand-600 focus:outline-none"
                 />
               </div>
             </div>
@@ -263,7 +263,7 @@ export default function AmbassadorProfilePage() {
                   value={linkedin}
                   onChange={(e) => setLinkedin(e.target.value)}
                   placeholder="https://linkedin.com/in/yourprofile"
-                  className="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm focus:border-brand-600 focus:outline-none"
+                  className="w-full min-h-[44px] rounded-xl border border-slate-300 px-3.5 py-2.5 text-base sm:text-sm focus:border-brand-600 focus:outline-none"
                 />
               </div>
               <div>
@@ -275,7 +275,7 @@ export default function AmbassadorProfilePage() {
                   value={instagram}
                   onChange={(e) => setInstagram(e.target.value)}
                   placeholder="@yourhandle"
-                  className="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm focus:border-brand-600 focus:outline-none"
+                  className="w-full min-h-[44px] rounded-xl border border-slate-300 px-3.5 py-2.5 text-base sm:text-sm focus:border-brand-600 focus:outline-none"
                 />
               </div>
               <div>
@@ -287,7 +287,7 @@ export default function AmbassadorProfilePage() {
                   value={tiktok}
                   onChange={(e) => setTiktok(e.target.value)}
                   placeholder="@yourtiktok"
-                  className="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm focus:border-brand-600 focus:outline-none"
+                  className="w-full min-h-[44px] rounded-xl border border-slate-300 px-3.5 py-2.5 text-base sm:text-sm focus:border-brand-600 focus:outline-none"
                 />
               </div>
               <div>
@@ -299,7 +299,7 @@ export default function AmbassadorProfilePage() {
                   value={twitter}
                   onChange={(e) => setTwitter(e.target.value)}
                   placeholder="@yourhandle"
-                  className="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm focus:border-brand-600 focus:outline-none"
+                  className="w-full min-h-[44px] rounded-xl border border-slate-300 px-3.5 py-2.5 text-base sm:text-sm focus:border-brand-600 focus:outline-none"
                 />
               </div>
               <div className="sm:col-span-2">
@@ -311,7 +311,7 @@ export default function AmbassadorProfilePage() {
                   value={portfolio}
                   onChange={(e) => setPortfolio(e.target.value)}
                   placeholder="https://yourportfolio.com or Behance"
-                  className="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm focus:border-brand-600 focus:outline-none"
+                  className="w-full min-h-[44px] rounded-xl border border-slate-300 px-3.5 py-2.5 text-base sm:text-sm focus:border-brand-600 focus:outline-none"
                 />
               </div>
             </div>
@@ -331,7 +331,7 @@ export default function AmbassadorProfilePage() {
                 <select
                   value={promotionStrategy}
                   onChange={(e) => setPromotionStrategy(e.target.value)}
-                  className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm focus:border-brand-600 focus:outline-none"
+                  className="w-full min-h-[44px] rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-base sm:text-sm focus:border-brand-600 focus:outline-none"
                 >
                   <option value="WhatsApp Student Groups & Status">WhatsApp Student Groups &amp; Status</option>
                   <option value="Campus & Class Peer Outreach">Campus &amp; Class Peer Outreach</option>
@@ -348,7 +348,7 @@ export default function AmbassadorProfilePage() {
                 <select
                   value={targetAudience}
                   onChange={(e) => setTargetAudience(e.target.value)}
-                  className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm focus:border-brand-600 focus:outline-none"
+                  className="w-full min-h-[44px] rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-base sm:text-sm focus:border-brand-600 focus:outline-none"
                 >
                   <option value="University / College Undergraduates">University / College Undergraduates</option>
                   <option value="High School Leavers & Pre-University">High School Leavers &amp; Pre-University</option>
@@ -368,7 +368,7 @@ export default function AmbassadorProfilePage() {
                 value={bio}
                 onChange={(e) => setBio(e.target.value)}
                 placeholder="Share a brief bio about your creative journey..."
-                className="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm focus:border-brand-600 focus:outline-none"
+                className="w-full min-h-[44px] rounded-xl border border-slate-300 px-3.5 py-2.5 text-base sm:text-sm focus:border-brand-600 focus:outline-none"
               />
             </div>
           </div>
