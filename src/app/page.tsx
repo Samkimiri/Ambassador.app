@@ -59,23 +59,23 @@ export default function HomePage() {
                   at Sam Creative Design School.
                 </p>
 
-                <div className="flex flex-wrap items-center gap-3 pt-2">
+                <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-3 pt-2">
                   <Link
                     href="/auth/register"
-                    className="inline-flex items-center gap-2 rounded-xl bg-gold-400 px-6 py-3.5 text-sm font-bold text-navy-900 shadow-sm hover:bg-gold-300 transition"
+                    className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl bg-gold-400 px-6 py-3.5 text-sm font-bold text-navy-900 shadow-sm hover:bg-gold-300 transition"
                   >
                     Apply to Become an Ambassador
                     <ArrowRight className="h-4 w-4" />
                   </Link>
                   <Link
                     href="/join"
-                    className="inline-flex items-center gap-2 rounded-xl border border-white/30 bg-navy-900 px-6 py-3.5 text-sm font-semibold text-white hover:bg-navy-800 transition"
+                    className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-white/30 bg-navy-900 px-6 py-3.5 text-sm font-semibold text-white hover:bg-navy-800 transition"
                   >
                     Submit Course Enquiry
                   </Link>
                   <Link
                     href="/dashboard"
-                    className="inline-flex items-center gap-2 rounded-xl px-4 py-3.5 text-sm font-semibold text-white hover:text-gold-300 transition"
+                    className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl px-4 py-3.5 text-sm font-semibold text-white hover:text-gold-300 transition"
                   >
                     Open Portal →
                   </Link>

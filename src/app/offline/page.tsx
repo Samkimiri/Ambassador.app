@@ -26,7 +26,7 @@ export default function OfflinePage() {
             <h1 className="text-2xl font-extrabold text-slate-900">
               You Are Currently Working Offline
             </h1>
-            <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+            <p className="text-sm text-slate-600 leading-relaxed">
               SCDS Ambassador Hub is engineered to work without an active internet
               connection. You can still view your referral code, copy marketing
               captions, inspect your cached dashboard, and record prospective
@@ -35,12 +35,12 @@ export default function OfflinePage() {
           </div>
 
           {amb && (
-            <div className="rounded-xl border border-slate-200 bg-slate-950 text-white p-4 text-left flex items-center justify-between">
+            <div className="rounded-xl border border-slate-200 bg-slate-950 text-white p-4 text-left flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <div className="text-[11px] text-slate-400">
                   Your Cached Ambassador Referral Code
                 </div>
-                <div className="text-base font-mono font-bold text-brand-400 mt-0.5">
+                <div className="text-base font-mono font-bold text-brand-400 mt-0.5 break-all">
                   {amb.referralCode}
                 </div>
               </div>
@@ -51,7 +51,7 @@ export default function OfflinePage() {
                     `${window.location.origin}/join?ref=${amb.referralCode}`
                   )
                 }
-                className="rounded-lg bg-brand-600 px-3.5 py-2 text-xs font-semibold text-white hover:bg-brand-500"
+                className="inline-flex min-h-[44px] items-center justify-center rounded-lg bg-brand-600 px-4 py-2 text-xs font-semibold text-white hover:bg-brand-500 shrink-0"
               >
                 Copy Referral Link
               </button>

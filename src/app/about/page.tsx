@@ -54,10 +54,10 @@ export default function AboutPage() {
               Apply in 2 minutes or submit a course enquiry for our upcoming intake.
             </p>
           </div>
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3 w-full sm:w-auto">
             <Link
               href="/auth/register"
-              className="rounded-xl bg-brand-600 px-5 py-3 text-sm font-semibold text-white hover:bg-brand-500"
+              className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-brand-600 px-5 py-3 text-sm font-semibold text-white hover:bg-brand-500"
             >
               Apply as Ambassador
             </Link>
@@ -65,7 +65,7 @@ export default function AboutPage() {
               href="https://samcreativedesignschool.com"
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-700 bg-slate-900 px-5 py-3 text-sm font-semibold text-slate-200 hover:bg-slate-800"
+              className="inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl border border-slate-700 bg-slate-900 px-5 py-3 text-sm font-semibold text-slate-200 hover:bg-slate-800"
             >
               Main SCDS Website <ExternalLink className="h-4 w-4" />
             </a>
